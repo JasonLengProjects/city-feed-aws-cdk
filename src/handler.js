@@ -1,4 +1,4 @@
-const handler = async function (event: any, context: any) {
+exports.handler = async function (event, context) {
   try {
     let method = event.httpMethod;
 
@@ -58,12 +58,7 @@ const handler = async function (event: any, context: any) {
       body: "We only accept GET /",
     };
   } catch (error) {
-    let body;
-    if (error instanceof Error) {
-      body = error.stack;
-    } else {
-      body = JSON.stringify(error, null, 2);
-    }
+    let body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
       headers: {},
@@ -71,5 +66,3 @@ const handler = async function (event: any, context: any) {
     };
   }
 };
-
-export { handler };

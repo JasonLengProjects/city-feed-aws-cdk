@@ -18,7 +18,7 @@ export class CityFeedService extends Construct {
       functionName: props.lambdaFunctionName,
       runtime: Runtime.NODEJS_14_X,
       code: Code.fromAsset("src"),
-      handler: "handler.hanlder",
+      handler: "handler.handler",
       timeout: Duration.seconds(10),
       environment: {},
     });
