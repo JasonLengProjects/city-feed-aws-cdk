@@ -1,28 +1,37 @@
-import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as lambda from "aws-cdk-lib/aws-lambda";
+import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda";
+import { RestApi, LambdaIntegration } from "aws-cdk-lib/aws-apigateway";
+import { Duration, StackProps } from "aws-cdk-lib";
+
+export interface CityfeedServiceProps extends StackProps {
+  lambdaFunctionName: string; // lambda function name
+}
 
 export class CityFeedService extends Construct {
-  constructor(scope: Construct, id: string) {
+  private restApi: RestApi;
+  private lambdaFunction: Function;
+
+  constructor(scope: Construct, id: string, props: CityfeedServiceProps) {
     super(scope, id);
 
-    const handler = new lambda.Function(this, "MainHandler", {
-      runtime: lambda.Runtime.NODEJS_14_X,
-      code: lambda.Code.fromAsset("resources"),
-      handler: "lambdaMain.main",
+    this.lambdaFunction = new Function(this, props.lambdaFunctionName, {
+      functionName: props.lambdaFunctionName,
+      runtime: Runtime.NODEJS_14_X,
+      code: Code.fromAsset("src"),
+      handler: "handler.handler",
+      timeout: Duration.seconds(10),
       environment: {},
     });
 
-    const api = new apigateway.RestApi(this, "first-api", {
-      restApiName: "CityFeed First API",
+    this.restApi = new RestApi(this, id + "RestApi", {
+      restApiName: id + "RestApi",
       description: "This is the first test API for CityFeed",
     });
 
-    const getFirstApiIntegration = new apigateway.LambdaIntegration(handler, {
+    const getRestApiIntegration = new LambdaIntegration(this.lambdaFunction, {
       requestTemplates: { "application/json": '{ "statusCode": "200" }' },
     });
 
-    api.root.addMethod("GET", getFirstApiIntegration);
+    this.restApi.root.addMethod("GET", getRestApiIntegration);
   }
 }
