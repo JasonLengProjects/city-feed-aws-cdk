@@ -10,31 +10,37 @@ import {
 import { Duration, StackProps } from "aws-cdk-lib";
 
 export interface CityfeedServiceProps extends StackProps {
-  lambdaFunctionName: string; // lambda function name
+  lambdaFunctionNames: {
+    getFeedListFunctionName: string;
+  }; // lambda function names
   apiKeyName: string; // api key name
 }
 
 export class CityFeedService extends Construct {
   private restApi: RestApi;
-  private lambdaFunction: Function;
+  private getListFunction: Function;
 
   constructor(scope: Construct, id: string, props: CityfeedServiceProps) {
     super(scope, id);
 
     // create lambda function
-    this.lambdaFunction = new Function(this, props.lambdaFunctionName, {
-      functionName: props.lambdaFunctionName,
-      runtime: Runtime.NODEJS_14_X,
-      code: Code.fromAsset("src"),
-      handler: "handler.handler",
-      timeout: Duration.seconds(10),
-      environment: {},
-    });
+    this.getListFunction = new Function(
+      this,
+      props.lambdaFunctionNames.getFeedListFunctionName,
+      {
+        functionName: props.lambdaFunctionNames.getFeedListFunctionName,
+        runtime: Runtime.NODEJS_14_X,
+        code: Code.fromAsset("src"),
+        handler: "getFeedListHandler.handler",
+        timeout: Duration.seconds(10),
+        environment: {},
+      }
+    );
 
     // create rest api
     this.restApi = new RestApi(this, id + "RestApi", {
       restApiName: id + "RestApi",
-      description: "This is the first test API for CityFeed",
+      description: "This is the first test Api for CityFeed",
     });
 
     // create usage plan
@@ -63,13 +69,14 @@ export class CityFeedService extends Construct {
     usagePlan.addApiKey(apiKey);
 
     // bind lambda to api
-    const getRestApiIntegration = new LambdaIntegration(this.lambdaFunction, {
+    const getRestApiIntegration = new LambdaIntegration(this.getListFunction, {
       requestTemplates: { "application/json": '{ "statusCode": "200" }' },
     });
 
-    this.restApi.root.addMethod("GET", getRestApiIntegration, {
+    // source for getting feed list
+    const getFeedListResource = this.restApi.root.addResource("getFeedList");
+    getFeedListResource.addMethod("GET", getRestApiIntegration, {
       apiKeyRequired: true,
     });
-    this.restApi.root.addResource;
   }
 }

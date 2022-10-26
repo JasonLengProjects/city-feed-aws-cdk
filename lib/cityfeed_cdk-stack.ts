@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as cityfeed_service from "../lib/cityfeed_service";
 import {
-  LAMBDA_FUNCTION_NAME,
+  GET_FEED_LIST_FUNCTION_NAME,
   TEST_API_KEY_NAME,
 } from "./constants/apiLambdaConst";
 
@@ -11,7 +11,9 @@ export class CityfeedCdkStack extends cdk.Stack {
     super(scope, id, props);
 
     new cityfeed_service.CityFeedService(this, "CityFeedService", {
-      lambdaFunctionName: LAMBDA_FUNCTION_NAME,
+      lambdaFunctionNames: {
+        getFeedListFunctionName: GET_FEED_LIST_FUNCTION_NAME,
+      },
       apiKeyName: TEST_API_KEY_NAME,
     });
   }
