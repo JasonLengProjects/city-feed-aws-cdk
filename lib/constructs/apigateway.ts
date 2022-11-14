@@ -13,6 +13,7 @@ import { Duration, StackProps } from "aws-cdk-lib";
 export interface CityfeedServiceProps extends StackProps {
   lambdaFunctionNames: {
     getFeedListFunctionName: string;
+    postFeedFuntionName: string;
   }; // lambda function names
   apiKeyName: string; // api key name
 }
@@ -20,11 +21,12 @@ export interface CityfeedServiceProps extends StackProps {
 export class CityFeedService extends Construct {
   private restApi: RestApi;
   private getListFunction: Function;
+  private postFeedFunction: Function;
 
   constructor(scope: Construct, id: string, props: CityfeedServiceProps) {
     super(scope, id);
 
-    // create lambda function
+    // create lambda function for getListFunction
     this.getListFunction = new Function(
       this,
       props.lambdaFunctionNames.getFeedListFunctionName,
@@ -37,7 +39,7 @@ export class CityFeedService extends Construct {
         environment: {},
       }
     );
-    
+
     // policies for dynamodb-readonly
     this.getListFunction.addToRolePolicy(
       new PolicyStatement({
@@ -94,6 +96,89 @@ export class CityFeedService extends Construct {
       })
     );
 
+    // create lambda function for postFeedFunction
+    this.postFeedFunction = new Function(
+      this,
+      props.lambdaFunctionNames.postFeedFuntionName,
+      {
+        functionName: props.lambdaFunctionNames.postFeedFuntionName,
+        runtime: Runtime.NODEJS_14_X,
+        code: Code.fromAsset("src"),
+        handler: "postFeedHandler.handler",
+        timeout: Duration.seconds(10),
+        environment: {},
+      }
+    );
+
+    // policies for dynamodb-readonly
+    this.postFeedFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "s3:*",
+          "s3-object-lambda:*",
+          "dynamodb:*",
+          "dax:*",
+          "application-autoscaling:DeleteScalingPolicy",
+          "application-autoscaling:DeregisterScalableTarget",
+          "application-autoscaling:DescribeScalableTargets",
+          "application-autoscaling:DescribeScalingActivities",
+          "application-autoscaling:DescribeScalingPolicies",
+          "application-autoscaling:PutScalingPolicy",
+          "application-autoscaling:RegisterScalableTarget",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:GetMetricData",
+          "datapipeline:ActivatePipeline",
+          "datapipeline:CreatePipeline",
+          "datapipeline:DeletePipeline",
+          "datapipeline:DescribeObjects",
+          "datapipeline:DescribePipelines",
+          "datapipeline:GetPipelineDefinition",
+          "datapipeline:ListPipelines",
+          "datapipeline:PutPipelineDefinition",
+          "datapipeline:QueryObjects",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "iam:GetRole",
+          "iam:ListRoles",
+          "kms:DescribeKey",
+          "kms:ListAliases",
+          "sns:CreateTopic",
+          "sns:DeleteTopic",
+          "sns:ListSubscriptions",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTopics",
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:SetTopicAttributes",
+          "lambda:CreateFunction",
+          "lambda:ListFunctions",
+          "lambda:ListEventSourceMappings",
+          "lambda:CreateEventSourceMapping",
+          "lambda:DeleteEventSourceMapping",
+          "lambda:GetFunctionConfiguration",
+          "lambda:DeleteFunction",
+          "resource-groups:ListGroups",
+          "resource-groups:ListGroupResources",
+          "resource-groups:GetGroup",
+          "resource-groups:GetGroupQuery",
+          "resource-groups:DeleteGroup",
+          "resource-groups:CreateGroup",
+          "tag:GetResources",
+          "kinesis:ListStreams",
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+        ],
+        resources: ["*"],
+      })
+    );
+
     // create rest api
     this.restApi = new RestApi(this, id + "RestApi", {
       restApiName: id + "RestApi",
@@ -130,9 +215,22 @@ export class CityFeedService extends Construct {
       requestTemplates: { "application/json": '{ "statusCode": "200" }' },
     });
 
+    const postFeedRestApiIntegration = new LambdaIntegration(
+      this.postFeedFunction,
+      {
+        requestTemplates: { "application/json": '{ "statusCode": "200" }' },
+      }
+    );
+
     // source for getting feed list
     const getFeedListResource = this.restApi.root.addResource("getFeedList");
     getFeedListResource.addMethod("GET", getRestApiIntegration, {
+      apiKeyRequired: true,
+    });
+
+    // source fot posting feed
+    const postFeedResource = this.restApi.root.addResource("postFeed");
+    postFeedResource.addMethod("POST", postFeedRestApiIntegration, {
       apiKeyRequired: true,
     });
   }
