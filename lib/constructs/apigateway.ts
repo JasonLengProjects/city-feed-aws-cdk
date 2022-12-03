@@ -44,6 +44,10 @@ export class CityFeedService extends Construct {
     this.getListFunction.addToRolePolicy(
       new PolicyStatement({
         actions: [
+          "s3:Get*",
+          "s3:List*",
+          "s3-object-lambda:Get*",
+          "s3-object-lambda:List*",
           "application-autoscaling:DescribeScalableTargets",
           "application-autoscaling:DescribeScalingActivities",
           "application-autoscaling:DescribeScalingPolicies",

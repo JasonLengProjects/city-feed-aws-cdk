@@ -1,11 +1,14 @@
 const {
   REGION_MAPPING,
   FEED_DYNAMODB_TABLE_NAME,
+  MEDIA_BUCKET_NAME,
+  IMAGE_URL_EXP_SECONDS,
 } = require("./constants/constants");
 const AWS = require("aws-sdk");
 
 AWS.config.update({ region: "us-west-2" });
 
+const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
 
 exports.handler = async function (event, context) {
@@ -35,6 +38,11 @@ exports.handler = async function (event, context) {
 
       // map items into response body
       let feedList = items.Items.map((item) => {
+        const imgUrl = s3.getSignedUrl("getObject", {
+          Bucket: MEDIA_BUCKET_NAME,
+          Key: item.media.M.bucketKey.S,
+          Expires: IMAGE_URL_EXP_SECONDS,
+        });
         return {
           feedId: item.id.S,
           userId: item.userId.S,
@@ -46,7 +54,7 @@ exports.handler = async function (event, context) {
           media: [
             {
               type: item.media.M.type.S,
-              imgUrl: item.media.M.imgUrl.S,
+              imgUrl: imgUrl,
             },
           ],
           likes: item.likes.N,
