@@ -8,6 +8,7 @@ import {
   TEST_API_KEY_NAME,
   MEDIA_BUCKET_NAME,
   FEED_DYNAMODB_TABLE_NAME,
+  POST_FEED_FUNCTION_NAME,
 } from "./constants/apiLambdaConst";
 
 export class CityfeedCdkStack extends cdk.Stack {
@@ -17,6 +18,7 @@ export class CityfeedCdkStack extends cdk.Stack {
     new cityfeed_service.CityFeedService(this, "CityFeedService", {
       lambdaFunctionNames: {
         getFeedListFunctionName: GET_FEED_LIST_FUNCTION_NAME,
+        postFeedFuntionName: POST_FEED_FUNCTION_NAME,
       },
       apiKeyName: TEST_API_KEY_NAME,
     });
