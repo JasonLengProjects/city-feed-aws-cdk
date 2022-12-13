@@ -3,16 +3,22 @@ import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 
 export interface S3BucketProps extends StackProps {
-  bucketName: string;
+  feedImageBucketName: string;
+  userAvatarBucketName: string;
 }
 
 export class S3BucketConstruct extends Construct {
-  private bucket: Bucket;
+  private feedImageBucket: Bucket;
+  private userAvatarBucket: Bucket;
   constructor(scope: Construct, id: string, props: S3BucketProps) {
     super(scope, id);
 
-    this.bucket = new Bucket(this, props.bucketName, {
-      bucketName: props.bucketName,
+    this.feedImageBucket = new Bucket(this, props.feedImageBucketName, {
+      bucketName: props.feedImageBucketName,
+    });
+
+    this.userAvatarBucket = new Bucket(this, props.userAvatarBucketName, {
+      bucketName: props.userAvatarBucketName,
     });
   }
 }

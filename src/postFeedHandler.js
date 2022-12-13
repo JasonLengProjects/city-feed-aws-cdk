@@ -84,7 +84,7 @@ exports.handler = async function (event, context) {
     let body = {
       code: "0",
       msg: "Success",
-      feedId: "testId",
+      feedId: entryId,
     };
 
     return {

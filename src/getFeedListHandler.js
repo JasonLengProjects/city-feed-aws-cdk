@@ -117,7 +117,13 @@ exports.handler = async function (event, context) {
       // };
       return {
         statusCode: 200,
-        headers: {},
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "OPTIONS,GET",
+          "X-Requested-With": "*",
+          "Access-Control-Allow-Headers":
+            "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
+        },
         body: JSON.stringify(body),
       };
     }
