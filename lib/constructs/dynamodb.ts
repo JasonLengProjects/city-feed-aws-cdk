@@ -3,22 +3,34 @@ import { Construct } from "constructs";
 import { Table, BillingMode, AttributeType } from "aws-cdk-lib/aws-dynamodb";
 
 export interface DynamoDBProps extends StackProps {
-  dynamoDBTableName: string;
+  dynamoDBFeedTableName: string;
+  dynamoDBUserTableName: string;
 }
 
 export class DynamoDBConstruct extends Construct {
-  private table: Table;
+  private feedTable: Table;
+  private userTable: Table;
   constructor(scope: Construct, id: string, props: DynamoDBProps) {
     super(scope, id);
 
-    this.table = new Table(this, id, {
-      tableName: props.dynamoDBTableName,
+    this.feedTable = new Table(this, `${id}-feed-table`, {
+      tableName: props.dynamoDBFeedTableName,
       billingMode: BillingMode.PROVISIONED,
-      readCapacity: 1,
-      writeCapacity: 1,
+      readCapacity: 5,
+      writeCapacity: 5,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: { name: "id", type: AttributeType.STRING },
       sortKey: { name: "createdAt", type: AttributeType.NUMBER },
+    });
+
+    this.userTable = new Table(this, `${id}-user-table`, {
+      tableName: props.dynamoDBUserTableName,
+      billingMode: BillingMode.PROVISIONED,
+      readCapacity: 5,
+      writeCapacity: 5,
+      removalPolicy: RemovalPolicy.DESTROY,
+      partitionKey: { name: "id", type: AttributeType.STRING },
+      sortKey: { name: "joinedAt", type: AttributeType.NUMBER },
     });
   }
 }
