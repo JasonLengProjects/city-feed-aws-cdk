@@ -12,6 +12,7 @@ import {
   USER_AVATAR_BUCKET_NAME,
   FEED_DYNAMODB_TABLE_NAME,
   USER_DYNAMODB_TABLE_NAME,
+  USER_LIKED_DYNAMODB_TABLE_NAME,
 } from "./constants/apiLambdaConst";
 
 export class CityfeedCdkStack extends cdk.Stack {
@@ -35,6 +36,7 @@ export class CityfeedCdkStack extends cdk.Stack {
     new cityfeed_dynamodb.DynamoDBConstruct(this, "CityFeedDynamoDB", {
       dynamoDBFeedTableName: FEED_DYNAMODB_TABLE_NAME,
       dynamoDBUserTableName: USER_DYNAMODB_TABLE_NAME,
+      dynamoDBUserLikedTableName: USER_LIKED_DYNAMODB_TABLE_NAME,
     });
   }
 }

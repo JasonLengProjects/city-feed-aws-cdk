@@ -13,3 +13,5 @@ export const USER_AVATAR_BUCKET_NAME = "city-feed-user-avatar-bucket";
 export const FEED_DYNAMODB_TABLE_NAME = "city-feed-feed-table";
 
 export const USER_DYNAMODB_TABLE_NAME = "city-feed-user-table";
+
+export const USER_LIKED_DYNAMODB_TABLE_NAME = "city-feed-user-liked-table";

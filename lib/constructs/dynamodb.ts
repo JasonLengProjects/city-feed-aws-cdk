@@ -5,11 +5,14 @@ import { Table, BillingMode, AttributeType } from "aws-cdk-lib/aws-dynamodb";
 export interface DynamoDBProps extends StackProps {
   dynamoDBFeedTableName: string;
   dynamoDBUserTableName: string;
+  dynamoDBUserLikedTableName: string;
 }
 
 export class DynamoDBConstruct extends Construct {
   private feedTable: Table;
   private userTable: Table;
+  private userLikedTable: Table;
+
   constructor(scope: Construct, id: string, props: DynamoDBProps) {
     super(scope, id);
 
@@ -31,6 +34,16 @@ export class DynamoDBConstruct extends Construct {
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: { name: "id", type: AttributeType.STRING },
       sortKey: { name: "joinedAt", type: AttributeType.NUMBER },
+    });
+
+    this.userLikedTable = new Table(this, `${id}-user-liked-table`, {
+      tableName: props.dynamoDBUserLikedTableName,
+      billingMode: BillingMode.PROVISIONED,
+      readCapacity: 5,
+      writeCapacity: 5,
+      removalPolicy: RemovalPolicy.DESTROY,
+      partitionKey: { name: "id", type: AttributeType.STRING },
+      sortKey: { name: "likedAt", type: AttributeType.NUMBER },
     });
   }
 }
