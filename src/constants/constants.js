@@ -14,3 +14,8 @@ exports.MEDIA_BUCKET_NAME = "city-feed-media-bucket";
 exports.USER_AVATAR_BUCKET_NAME = "city-feed-user-avatar-bucket";
 
 exports.IMAGE_URL_EXP_SECONDS = 300;
+
+exports.FEED_LIKE_STATUS = {
+  Liked: "1",
+  Unliked: "0",
+};

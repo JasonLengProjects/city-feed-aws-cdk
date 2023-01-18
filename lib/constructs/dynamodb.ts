@@ -42,7 +42,7 @@ export class DynamoDBConstruct extends Construct {
       readCapacity: 5,
       writeCapacity: 5,
       removalPolicy: RemovalPolicy.DESTROY,
-      partitionKey: { name: "id", type: AttributeType.STRING },
+      partitionKey: { name: "id", type: AttributeType.STRING }, // id form: userId#feedId
       sortKey: { name: "likedAt", type: AttributeType.NUMBER },
     });
   }
