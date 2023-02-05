@@ -4,6 +4,7 @@ const {
   USER_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
   USER_AVATAR_BUCKET_NAME,
+  USER_LIKED_DYNAMODB_TABLE_NAME,
   IMAGE_URL_EXP_SECONDS,
 } = require("./constants/constants");
 const AWS = require("aws-sdk");
@@ -20,7 +21,8 @@ exports.handler = async function (event, context) {
 
     if (method === "GET") {
       const parameters = event.queryStringParameters;
-      const userId = parameters ? parameters.userId : "defaultId";
+      const userId =
+        parameters && parameters.userId ? parameters.userId : "defaultId";
 
       // query params
       const queryParams = {
@@ -55,12 +57,31 @@ exports.handler = async function (event, context) {
         const feedItems = await ddb.scan(feedQueryParams).promise();
 
         // map items into response body
-        let feedList = feedItems.Items.map((item) => {
+        const feedListPromises = feedItems.Items.map(async (item) => {
+          // get temp url for feed image
           const imgUrl = s3.getSignedUrl("getObject", {
             Bucket: MEDIA_BUCKET_NAME,
             Key: item.media.M.bucketKey.S,
             Expires: IMAGE_URL_EXP_SECONDS,
           });
+
+          // get id for user-liked table
+          const entryId = getUserLikedEntryId(userId, item.id.S);
+
+          // query like history
+          const ddbLikeQueryParams = {
+            TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
+            ExpressionAttributeValues: {
+              ":i": { S: entryId },
+            },
+            KeyConditionExpression: "id = :i",
+            ProjectionExpression: "id, likedAt",
+          };
+          const likeItems = await ddb.query(ddbLikeQueryParams).promise();
+
+          // determine if feed already liked by user
+          const liked = likeItems.Items.length == 0 ? "0" : "1";
+
           return {
             feedId: item.id.S,
             userId: item.userId.S,
@@ -76,10 +97,12 @@ exports.handler = async function (event, context) {
               },
             ],
             likes: item.likes.N,
-            liked: item.liked.S,
+            liked: liked,
             commentNum: item.commentNum.N,
           };
         });
+
+        const feedList = await Promise.all(feedListPromises);
 
         const avatarUrl = s3.getSignedUrl("getObject", {
           Bucket: USER_AVATAR_BUCKET_NAME,
@@ -125,4 +148,9 @@ exports.handler = async function (event, context) {
       body: JSON.stringify(body),
     };
   }
+};
+
+// entryId generation/hashing for dynamoDB id
+const getUserLikedEntryId = (userId, feedId) => {
+  return userId + "#" + feedId;
 };
