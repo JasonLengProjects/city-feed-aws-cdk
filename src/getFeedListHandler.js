@@ -1,6 +1,7 @@
 const {
   REGION_MAPPING,
   FEED_DYNAMODB_TABLE_NAME,
+  USER_LIKED_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
   IMAGE_URL_EXP_SECONDS,
 } = require("./constants/constants");
@@ -18,16 +19,22 @@ exports.handler = async function (event, context) {
 
     if (method === "GET") {
       const parameters = event.queryStringParameters;
-      const userId = parameters ? parameters.userId : "defaultId";
-      const region = parameters ? parameters.region : "seattle";
+      const userId =
+        parameters && parameters.userId ? parameters.userId : "defaultId";
+      const region =
+        parameters && parameters.region ? parameters.region : "seattle";
+      console.log("After region definition.");
       if (!REGION_MAPPING[region]) {
         return {
           statusCode: 400,
           headers: {},
-          body: "We don't support this region yet.",
+          body: JSON.stringify({
+            code: "1",
+            msg: "We don't support this region yet.",
+          }),
         };
       }
-
+      console.log("After if statement.");
       // query params (currently all)
       const queryParams = {
         TableName: FEED_DYNAMODB_TABLE_NAME,
@@ -36,13 +43,36 @@ exports.handler = async function (event, context) {
       // query multiple with scan
       const items = await ddb.scan(queryParams).promise();
 
+      console.log("Items: ", items.Items);
+
       // map items into response body
-      let feedList = items.Items.map((item) => {
+      const feedListPromises = items.Items.map(async (item) => {
+        // get temp url for feed image
         const imgUrl = s3.getSignedUrl("getObject", {
           Bucket: MEDIA_BUCKET_NAME,
           Key: item.media.M.bucketKey.S,
           Expires: IMAGE_URL_EXP_SECONDS,
         });
+
+        // get id for user-liked table
+        const entryId = getUserLikedEntryId(userId, item.id.S);
+
+        // query like history
+        const ddbLikeQueryParams = {
+          TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
+          ExpressionAttributeValues: {
+            ":i": { S: entryId },
+          },
+          KeyConditionExpression: "id = :i",
+          ProjectionExpression: "id, likedAt",
+        };
+        const likeItems = await ddb.query(ddbLikeQueryParams).promise();
+
+        // determine if feed already liked by user
+        const liked = likeItems.Items.length == 0 ? "0" : "1";
+
+        console.log("Liked: ", liked);
+
         return {
           feedId: item.id.S,
           userId: item.userId.S,
@@ -58,15 +88,19 @@ exports.handler = async function (event, context) {
             },
           ],
           likes: item.likes.N,
-          liked: item.liked.S,
+          liked: liked,
           commentNum: item.commentNum.N,
         };
       });
 
+      const feedList = await Promise.all(feedListPromises);
+
+      console.log("FeedList: ", feedList);
+
       let body = {
         code: "0",
         msg: "Success",
-        feedList: feedList,
+        feedList: feedList.reverse(), // show feeds in order from latest to earliest
       };
 
       // body = {
@@ -135,4 +169,9 @@ exports.handler = async function (event, context) {
       body: JSON.stringify(body),
     };
   }
+};
+
+// entryId generation/hashing for dynamoDB id
+const getUserLikedEntryId = (userId, feedId) => {
+  return userId + "#" + feedId;
 };
