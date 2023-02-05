@@ -24,7 +24,10 @@ exports.handler = async function (event, context) {
         return {
           statusCode: 400,
           headers: {},
-          body: "We don't support this region yet.",
+          body: {
+            code: "1",
+            msg: "We don't support this region yet.",
+          },
         };
       }
 
@@ -66,7 +69,7 @@ exports.handler = async function (event, context) {
       let body = {
         code: "0",
         msg: "Success",
-        feedList: feedList,
+        feedList: feedList.reverse(), // show feeds in order from latest to earliest
       };
 
       // body = {

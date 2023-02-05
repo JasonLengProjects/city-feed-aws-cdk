@@ -90,7 +90,7 @@ exports.handler = async function (event, context) {
         const userDetails = {
           avatar: avatarUrl,
           email: userItem.email.S,
-          feedList: feedList,
+          feedList: feedList.reverse(), // show feeds in order from latest to earliest
         };
 
         body = {
