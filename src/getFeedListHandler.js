@@ -4,6 +4,7 @@ const {
   USER_LIKED_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
   IMAGE_URL_EXP_SECONDS,
+  FEED_LIKE_STATUS,
 } = require("./constants/constants");
 const AWS = require("aws-sdk");
 
@@ -55,21 +56,22 @@ exports.handler = async function (event, context) {
         });
 
         // get id for user-liked table
-        const entryId = getUserLikedEntryId(userId, item.id.S);
+        // const entryId = getUserLikedEntryId(userId, item.id.S);
 
         // query like history
         const ddbLikeQueryParams = {
           TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
           ExpressionAttributeValues: {
-            ":i": { S: entryId },
+            ":ui": { S: userId },
+            ":fi": { S: item.id.S },
           },
-          KeyConditionExpression: "id = :i",
-          ProjectionExpression: "id, likedAt",
+          KeyConditionExpression: "userId = :ui and feedId = :fi",
+          ProjectionExpression: "userId, likedAt",
         };
         const likeItems = await ddb.query(ddbLikeQueryParams).promise();
 
         // determine if feed already liked by user
-        const liked = likeItems.Items.length == 0 ? "0" : "1";
+        const liked = likeItems.Items.length == 0 ? FEED_LIKE_STATUS.Unliked : FEED_LIKE_STATUS.Liked;
 
         console.log("Liked: ", liked);
 

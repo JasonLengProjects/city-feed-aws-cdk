@@ -66,16 +66,17 @@ exports.handler = async function (event, context) {
           });
 
           // get id for user-liked table
-          const entryId = getUserLikedEntryId(userId, item.id.S);
+          // const entryId = getUserLikedEntryId(userId, item.id.S);
 
           // query like history
           const ddbLikeQueryParams = {
             TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
             ExpressionAttributeValues: {
-              ":i": { S: entryId },
+              ":ui": { S: userId },
+              ":fi": { S: item.id.S },
             },
-            KeyConditionExpression: "id = :i",
-            ProjectionExpression: "id, likedAt",
+            KeyConditionExpression: "userId = :ui and feedId = :fi",
+            ProjectionExpression: "userId, likedAt",
           };
           const likeItems = await ddb.query(ddbLikeQueryParams).promise();
 
