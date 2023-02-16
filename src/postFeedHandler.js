@@ -62,7 +62,6 @@ exports.handler = async function (event, context) {
         createdAt: { N: timestamp },
         commentNum: { N: "0" },
         content: { S: content },
-        liked: { S: "0" },
         likes: { N: "0" },
         media: { M: { type: { S: fileType }, bucketKey: { S: key } } },
         region: { S: region },
