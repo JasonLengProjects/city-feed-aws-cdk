@@ -114,7 +114,9 @@ exports.handler = async function (event, context) {
         const userDetails = {
           avatar: avatarUrl,
           email: userItem.email.S,
-          feedList: feedList.reverse(), // show feeds in order from latest to earliest
+          feedList: feedList.sort(
+            (a, b) => parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10)
+          ), // show feeds in order from latest to earliest
         };
 
         body = {

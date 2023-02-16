@@ -105,7 +105,9 @@ exports.handler = async function (event, context) {
       let body = {
         code: "0",
         msg: "Success",
-        feedList: feedList.reverse(), // show feeds in order from latest to earliest
+        feedList: feedList.sort(
+          (a, b) =>  parseInt(b.timestamp, 10) - parseInt(a.timestamp, 10)
+        ), // show feeds in order from latest to earliest
       };
 
       return {

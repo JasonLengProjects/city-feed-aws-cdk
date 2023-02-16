@@ -33,7 +33,14 @@ exports.handler = async function (event, context) {
       };
       const likedItems = await ddb.query(ddbLikeQueryParams).promise();
 
-      const feedListPromises = likedItems.Items.map(async (item) => {
+      // show feeds in order from latest liked to earliest liked
+      const likedItemList = likedItems.Items.sort(
+        (a, b) => parseInt(b.likedAt.N, 10) - parseInt(a.likedAt.N, 10)
+      );
+
+      console.log("Sorted list: ", likedItemList);
+
+      const feedListPromises = likedItemList.map(async (item) => {
         const feedId = item.feedId.S;
         const ddbFeedQueryParams = {
           TableName: FEED_DYNAMODB_TABLE_NAME,
@@ -79,7 +86,7 @@ exports.handler = async function (event, context) {
       let body = {
         code: "0",
         msg: "Success",
-        feedList: feedList.reverse(), // show feeds in order from latest to earliest
+        feedList: feedList,
       };
 
       return {
