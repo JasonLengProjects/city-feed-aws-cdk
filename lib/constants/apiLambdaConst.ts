@@ -6,6 +6,8 @@ export const GET_USER_DETAIL_FUNCTION_NAME = "GetUserDetailHandler";
 
 export const LIKE_FEED_FUNCTION_NAME = "LikeFeedHandler";
 
+export const GET_FAVORITE_LIST_FUNCTION_NAME = "GetFavListHandler";
+
 export const TEST_API_KEY_NAME = "test-api-key";
 
 export const MEDIA_BUCKET_NAME = "city-feed-media-bucket";

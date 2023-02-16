@@ -8,6 +8,7 @@ import {
   POST_FEED_FUNCTION_NAME,
   GET_USER_DETAIL_FUNCTION_NAME,
   LIKE_FEED_FUNCTION_NAME,
+  GET_FAVORITE_LIST_FUNCTION_NAME,
   TEST_API_KEY_NAME,
   MEDIA_BUCKET_NAME,
   USER_AVATAR_BUCKET_NAME,
@@ -26,6 +27,7 @@ export class CityfeedCdkStack extends cdk.Stack {
         postFeedFuntionName: POST_FEED_FUNCTION_NAME,
         getUserDetailFunctionName: GET_USER_DETAIL_FUNCTION_NAME,
         likeFeedFunctionName: LIKE_FEED_FUNCTION_NAME,
+        getFavListFunctionName: GET_FAVORITE_LIST_FUNCTION_NAME,
       },
       apiKeyName: TEST_API_KEY_NAME,
     });

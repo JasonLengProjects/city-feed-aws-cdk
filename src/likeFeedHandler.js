@@ -20,15 +20,16 @@ exports.handler = async function (event, context) {
     const timestamp = Date.now().toString();
 
     // handle DynamoDB entry
-    const entryId = getEntryId(userId, feedId);
+    // const entryId = getEntryId(userId, feedId);
 
     // query like history
     const ddbLikeQueryParams = {
       TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
       ExpressionAttributeValues: {
-        ":i": { S: entryId },
+        ":ui": { S: userId },
+        ":fi": { S: feedId },
       },
-      KeyConditionExpression: "id = :i",
+      KeyConditionExpression: "userId = :ui and feedId = :fi",
       ProjectionExpression: "id, likedAt",
     };
 
@@ -59,7 +60,8 @@ exports.handler = async function (event, context) {
       const newLikeParams = {
         TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
         Item: {
-          id: { S: entryId },
+          userId: { S: userId },
+          feedId: { S: feedId },
           likedAt: { N: timestamp },
         },
       };
@@ -105,8 +107,9 @@ exports.handler = async function (event, context) {
       const deleteLikeParams = {
         TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
         Key: {
-          id: { S: entryId },
-          likedAt: { N: likeItems.Items[0].likedAt.N },
+          userId: { S: userId },
+          feedId: { S: feedId },
+          // likedAt: { N: likeItems.Items[0].likedAt.N },
         },
       };
       await ddb
