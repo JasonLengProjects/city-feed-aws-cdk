@@ -24,7 +24,7 @@ exports.handler = async function (event, context) {
         parameters && parameters.userId ? parameters.userId : "defaultId";
       const region =
         parameters && parameters.region ? parameters.region : "seattle";
-      console.log("After region definition.");
+
       if (!REGION_MAPPING[region]) {
         return {
           statusCode: 400,
@@ -35,7 +35,7 @@ exports.handler = async function (event, context) {
           }),
         };
       }
-      console.log("After if statement.");
+
       // query params (currently all)
       const queryParams = {
         TableName: FEED_DYNAMODB_TABLE_NAME,
@@ -71,7 +71,10 @@ exports.handler = async function (event, context) {
         const likeItems = await ddb.query(ddbLikeQueryParams).promise();
 
         // determine if feed already liked by user
-        const liked = likeItems.Items.length == 0 ? FEED_LIKE_STATUS.Unliked : FEED_LIKE_STATUS.Liked;
+        const liked =
+          likeItems.Items.length == 0
+            ? FEED_LIKE_STATUS.Unliked
+            : FEED_LIKE_STATUS.Liked;
 
         console.log("Liked: ", liked);
 
@@ -105,52 +108,6 @@ exports.handler = async function (event, context) {
         feedList: feedList.reverse(), // show feeds in order from latest to earliest
       };
 
-      // body = {
-      //   code: "0",
-      //   msg: "Success",
-      //   feedList: [
-      //     {
-      //       feedId: "feedId1",
-      //       userId: "testUser1",
-      //       title: "Test Title 1",
-      //       avatar: "https://www.w3schools.com/howto/img_avatar.png",
-      //       content:
-      //         "These impressive and pretty sweets were sold in XXXXX store, this place is perfect to hang out with your friend, these impressive and pretty sweets were sold in XXXXX store, this place is perfect to hang out with your friend, these impressive and pretty sweets were sold in XXXXX store, this place is perfect to hang out with your friend, these impressive and pretty sweets were sold in XXXXX store.",
-      //       timestamp: Date.parse("19 Oct 2022 00:00:00 GMT").toString(),
-      //       region: REGION_MAPPING[region],
-      //       media: [
-      //         {
-      //           type: "jpg",
-      //           imgUrl:
-      //             "https://s3-media1.fl.yelpcdn.com/bphoto/Ths0O6Y-_vvS_NtPE7nmsg/o.jpg",
-      //         },
-      //       ],
-      //       likes: 20,
-      //       liked: "0",
-      //       commentNum: 5,
-      //     },
-      //     {
-      //       feedId: "feedId2",
-      //       userId: "testUser2",
-      //       title: "Test Title 2",
-      //       avatar: "https://www.w3schools.com/howto/img_avatar.png",
-      //       content:
-      //         "These impressive and pretty sweets were sold in XXXXX store, this place is perfect to hang out with your friend, these impressive and pretty sweets were sold in XXXXX store, this place is perfect to hang out with your friend, these impressive and pretty sweets were sold in XXXXX store, this place is perfect to hang out with your friend, these impressive and pretty sweets were sold in XXXXX store.",
-      //       timestamp: Date.parse("18 Oct 2022 00:00:00 GMT").toString(),
-      //       region: REGION_MAPPING[region],
-      //       media: [
-      //         {
-      //           type: "jpg",
-      //           imgUrl:
-      //             "https://media-cdn.tripadvisor.com/media/photo-p/17/8f/11/e5/1558094276338-largejpg.jpg",
-      //         },
-      //       ],
-      //       likes: 21,
-      //       liked: "1",
-      //       commentNum: 10,
-      //     },
-      //   ],
-      // };
       return {
         statusCode: 200,
         headers: {

@@ -17,6 +17,7 @@ export interface CityfeedServiceProps extends StackProps {
     postFeedFuntionName: string;
     getUserDetailFunctionName: string;
     likeFeedFunctionName: string;
+    getFavListFunctionName: string;
   }; // lambda function names
   apiKeyName: string; // api key name
 }
@@ -27,6 +28,7 @@ export class CityFeedService extends Construct {
   private postFeedFunction: Function;
   private getUserDetailFunction: Function;
   private likeFeedFunction: Function;
+  private getFavListFunction: Function;
 
   constructor(scope: Construct, id: string, props: CityfeedServiceProps) {
     super(scope, id);
@@ -262,7 +264,7 @@ export class CityFeedService extends Construct {
       })
     );
 
-    // create lambda function for postFeedFunction
+    // create lambda function for likeFeedFunction
     this.likeFeedFunction = new Function(
       this,
       props.lambdaFunctionNames.likeFeedFunctionName,
@@ -345,6 +347,80 @@ export class CityFeedService extends Construct {
       })
     );
 
+    // create lambda function for getUserDetailFunction
+    this.getFavListFunction = new Function(
+      this,
+      props.lambdaFunctionNames.getFavListFunctionName,
+      {
+        functionName: props.lambdaFunctionNames.getFavListFunctionName,
+        runtime: Runtime.NODEJS_14_X,
+        code: Code.fromAsset("src"),
+        handler: "getFavListHandler.handler",
+        timeout: Duration.seconds(10),
+        environment: {},
+      }
+    );
+
+    // policies for dynamodb-readonly
+    this.getFavListFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "s3:Get*",
+          "s3:List*",
+          "s3-object-lambda:Get*",
+          "s3-object-lambda:List*",
+          "application-autoscaling:DescribeScalableTargets",
+          "application-autoscaling:DescribeScalingActivities",
+          "application-autoscaling:DescribeScalingPolicies",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:GetMetricData",
+          "datapipeline:DescribeObjects",
+          "datapipeline:DescribePipelines",
+          "datapipeline:GetPipelineDefinition",
+          "datapipeline:ListPipelines",
+          "datapipeline:QueryObjects",
+          "dynamodb:BatchGetItem",
+          "dynamodb:Describe*",
+          "dynamodb:List*",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:PartiQLSelect",
+          "dax:Describe*",
+          "dax:List*",
+          "dax:GetItem",
+          "dax:BatchGetItem",
+          "dax:Query",
+          "dax:Scan",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "iam:GetRole",
+          "iam:ListRoles",
+          "kms:DescribeKey",
+          "kms:ListAliases",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTopics",
+          "lambda:ListFunctions",
+          "lambda:ListEventSourceMappings",
+          "lambda:GetFunctionConfiguration",
+          "resource-groups:ListGroups",
+          "resource-groups:ListGroupResources",
+          "resource-groups:GetGroup",
+          "resource-groups:GetGroupQuery",
+          "tag:GetResources",
+          "kinesis:ListStreams",
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+        ],
+        resources: ["*"],
+      })
+    );
+
     // create rest api
     this.restApi = new RestApi(this, id + "RestApi", {
       restApiName: id + "RestApi",
@@ -406,13 +482,20 @@ export class CityFeedService extends Construct {
       }
     );
 
+    const getFavListRestApiIntegration = new LambdaIntegration(
+      this.getFavListFunction,
+      {
+        requestTemplates: { "application/json": '{ "statusCode": "200" }' },
+      }
+    );
+
     // source for getting feed list
     const getFeedListResource = this.restApi.root.addResource("getFeedList");
     getFeedListResource.addMethod("GET", getRestApiIntegration, {
       apiKeyRequired: true,
     });
 
-    // source fot posting feed
+    // source for posting feed
     const postFeedResource = this.restApi.root.addResource("postFeed");
     postFeedResource.addMethod("POST", postFeedRestApiIntegration, {
       apiKeyRequired: true,
@@ -425,9 +508,15 @@ export class CityFeedService extends Construct {
       apiKeyRequired: true,
     });
 
-    // source fot like feed
+    // source for like feed
     const likeFeedResource = this.restApi.root.addResource("likeFeed");
     likeFeedResource.addMethod("POST", likeFeedRestApiIntegration, {
+      apiKeyRequired: true,
+    });
+
+    // source for getting favorite list
+    const getFavListResource = this.restApi.root.addResource("getFavList");
+    getFavListResource.addMethod("GET", getFavListRestApiIntegration, {
       apiKeyRequired: true,
     });
   }
