@@ -115,10 +115,10 @@ exports.handler = async function (event, context) {
 
 // entryId generation/hashing for dynamoDB id
 const getEntryId = (userId, timestamp) => {
-  return userId + timestamp;
+  return userId + "#" + timestamp;
 };
 
 // key generation/hashing for s3 object
 const getNewKey = (userId, timestamp, fileType) => {
-  return userId + timestamp + "." + fileType;
+  return userId + "#" + timestamp + "." + fileType;
 };
