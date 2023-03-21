@@ -8,6 +8,8 @@ export const LIKE_FEED_FUNCTION_NAME = "LikeFeedHandler";
 
 export const GET_FAVORITE_LIST_FUNCTION_NAME = "GetFavListHandler";
 
+export const EXP_FUNCTION_NAME = "ExperimentHandler";
+
 export const TEST_API_KEY_NAME = "test-api-key";
 
 export const MEDIA_BUCKET_NAME = "city-feed-media-bucket";
@@ -19,3 +21,7 @@ export const FEED_DYNAMODB_TABLE_NAME = "city-feed-feed-table";
 export const USER_DYNAMODB_TABLE_NAME = "city-feed-user-table";
 
 export const USER_LIKED_DYNAMODB_TABLE_NAME = "city-feed-user-liked-table";
+
+export const COGNITO_EXP_USER_POOL_NAME = "city-feed-exp-userpool";
+
+export const COGNITO_EXP_USER_POOL_CLIENT_NAME = "exp-app-client";
