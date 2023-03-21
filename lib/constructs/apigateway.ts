@@ -8,7 +8,7 @@ import {
   AuthorizationType,
   CfnAuthorizer,
 } from "aws-cdk-lib/aws-apigateway";
-import { PolicyStatement, AnyPrincipal } from "aws-cdk-lib/aws-iam";
+import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Duration, StackProps } from "aws-cdk-lib";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
 
@@ -25,6 +25,8 @@ export interface CityfeedServiceProps extends StackProps {
   authorizerProps: {
     expUserPool: UserPool;
     expAuthorizerName: string;
+    mainUserPool: UserPool;
+    mainAuthorizerName: string;
   };
 }
 
@@ -35,6 +37,8 @@ export class CityFeedService extends Construct {
   private getUserDetailFunction: Function;
   private likeFeedFunction: Function;
   private getFavListFunction: Function;
+
+  private mainAuthorizer: CfnAuthorizer;
 
   // test only
   private experimentFunction: Function;
@@ -548,6 +552,35 @@ export class CityFeedService extends Construct {
     });
     usagePlan.addApiKey(apiKey);
 
+    // create api gateway authorizers
+
+    // test only
+    // authorizer for experimental api
+    this.experimentAuthorizer = new CfnAuthorizer(
+      this,
+      props.authorizerProps.expAuthorizerName,
+      {
+        name: props.authorizerProps.expAuthorizerName,
+        type: "COGNITO_USER_POOLS",
+        identitySource: "method.request.header.Authorization",
+        providerArns: [props.authorizerProps.expUserPool.userPoolArn],
+        restApiId: this.restApi.restApiId,
+      }
+    );
+
+    // authorizer for token-required APIs
+    this.mainAuthorizer = new CfnAuthorizer(
+      this,
+      props.authorizerProps.mainAuthorizerName,
+      {
+        name: props.authorizerProps.mainAuthorizerName,
+        type: "COGNITO_USER_POOLS",
+        identitySource: "method.request.header.Authorization",
+        providerArns: [props.authorizerProps.mainUserPool.userPoolArn],
+        restApiId: this.restApi.restApiId,
+      }
+    );
+
     // bind lambda to api
     const getRestApiIntegration = new LambdaIntegration(this.getListFunction, {
       requestTemplates: { "application/json": '{ "statusCode": "200" }' },
@@ -621,19 +654,6 @@ export class CityFeedService extends Construct {
     });
 
     // test only
-    // authorizer for experimental api
-    this.experimentAuthorizer = new CfnAuthorizer(
-      this,
-      props.authorizerProps.expAuthorizerName,
-      {
-        name: props.authorizerProps.expAuthorizerName,
-        type: "COGNITO_USER_POOLS",
-        identitySource: "method.request.header.Authorization",
-        providerArns: [props.authorizerProps.expUserPool.userPoolArn],
-        restApiId: this.restApi.restApiId,
-      }
-    );
-
     // source for experimental api
     const experimentResource = this.restApi.root.addResource("experiment");
     experimentResource.addMethod("POST", experimentRestApiIntegration, {
