@@ -15,6 +15,7 @@ import { UserPool } from "aws-cdk-lib/aws-cognito";
 export interface CityfeedServiceProps extends StackProps {
   lambdaFunctionNames: {
     getFeedListFunctionName: string;
+    getUserFeedListFunctionName: string;
     postFeedFuntionName: string;
     getUserDetailFunctionName: string;
     likeFeedFunctionName: string;
@@ -33,6 +34,7 @@ export interface CityfeedServiceProps extends StackProps {
 export class CityFeedService extends Construct {
   private restApi: RestApi;
   private getListFunction: Function;
+  private getUserFeedListFunction: Function;
   private postFeedFunction: Function;
   private getUserDetailFunction: Function;
   private likeFeedFunction: Function;
@@ -145,6 +147,80 @@ export class CityFeedService extends Construct {
 
     // policies for dynamodb-readonly
     this.getListFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "s3:Get*",
+          "s3:List*",
+          "s3-object-lambda:Get*",
+          "s3-object-lambda:List*",
+          "application-autoscaling:DescribeScalableTargets",
+          "application-autoscaling:DescribeScalingActivities",
+          "application-autoscaling:DescribeScalingPolicies",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:GetMetricData",
+          "datapipeline:DescribeObjects",
+          "datapipeline:DescribePipelines",
+          "datapipeline:GetPipelineDefinition",
+          "datapipeline:ListPipelines",
+          "datapipeline:QueryObjects",
+          "dynamodb:BatchGetItem",
+          "dynamodb:Describe*",
+          "dynamodb:List*",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:PartiQLSelect",
+          "dax:Describe*",
+          "dax:List*",
+          "dax:GetItem",
+          "dax:BatchGetItem",
+          "dax:Query",
+          "dax:Scan",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "iam:GetRole",
+          "iam:ListRoles",
+          "kms:DescribeKey",
+          "kms:ListAliases",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTopics",
+          "lambda:ListFunctions",
+          "lambda:ListEventSourceMappings",
+          "lambda:GetFunctionConfiguration",
+          "resource-groups:ListGroups",
+          "resource-groups:ListGroupResources",
+          "resource-groups:GetGroup",
+          "resource-groups:GetGroupQuery",
+          "tag:GetResources",
+          "kinesis:ListStreams",
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    // create lambda function for getUserFeedListFunction
+    this.getUserFeedListFunction = new Function(
+      this,
+      props.lambdaFunctionNames.getUserFeedListFunctionName,
+      {
+        functionName: props.lambdaFunctionNames.getUserFeedListFunctionName,
+        runtime: Runtime.NODEJS_14_X,
+        code: Code.fromAsset("src"),
+        handler: "getUserFeedListHandler.handler",
+        timeout: Duration.seconds(10),
+        environment: {},
+      }
+    );
+
+    // policies for dynamodb-readonly
+    this.getUserFeedListFunction.addToRolePolicy(
       new PolicyStatement({
         actions: [
           "s3:Get*",
@@ -586,6 +662,13 @@ export class CityFeedService extends Construct {
       requestTemplates: { "application/json": '{ "statusCode": "200" }' },
     });
 
+    const getUserFeedListApiIntegration = new LambdaIntegration(
+      this.getUserFeedListFunction,
+      {
+        requestTemplates: { "application/json": '{ "statusCode": "200" }' },
+      }
+    );
+
     const postFeedRestApiIntegration = new LambdaIntegration(
       this.postFeedFunction,
       {
@@ -626,6 +709,17 @@ export class CityFeedService extends Construct {
     const getFeedListResource = this.restApi.root.addResource("getFeedList");
     getFeedListResource.addMethod("GET", getRestApiIntegration, {
       apiKeyRequired: true,
+    });
+
+    // source for getting user specific feed list
+    const getUserFeedListResource =
+      this.restApi.root.addResource("getUserFeedList");
+    getUserFeedListResource.addMethod("GET", getUserFeedListApiIntegration, {
+      apiKeyRequired: true,
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: {
+        authorizerId: this.mainAuthorizer.ref,
+      },
     });
 
     // source for posting feed

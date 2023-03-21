@@ -36,6 +36,8 @@ export class CityfeedCdkStack extends cdk.Stack {
       lambdaFunctionNames: {
         getFeedListFunctionName:
           LAMBDA_FUNCTION_NAMES.GET_FEED_LIST_FUNCTION_NAME,
+        getUserFeedListFunctionName:
+          LAMBDA_FUNCTION_NAMES.GET_USER_FEED_LIST_FUNCTION_NAME,
         postFeedFuntionName: LAMBDA_FUNCTION_NAMES.POST_FEED_FUNCTION_NAME,
         getUserDetailFunctionName:
           LAMBDA_FUNCTION_NAMES.GET_USER_DETAIL_FUNCTION_NAME,

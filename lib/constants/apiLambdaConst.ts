@@ -1,6 +1,8 @@
 export const LAMBDA_FUNCTION_NAMES = {
   GET_FEED_LIST_FUNCTION_NAME: "GetFeedListHandler",
 
+  GET_USER_FEED_LIST_FUNCTION_NAME: "GetUserFeedListHandler",
+
   POST_FEED_FUNCTION_NAME: "PostFeedHandler",
 
   GET_USER_DETAIL_FUNCTION_NAME: "GetUserDetailHandler",
