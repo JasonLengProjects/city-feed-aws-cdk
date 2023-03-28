@@ -144,8 +144,3 @@ export const handler = async function (
     };
   }
 };
-
-// entryId generation/hashing for dynamoDB id
-const getUserLikedEntryId = (userId: string, feedId: string) => {
-  return userId + "#" + feedId;
-};

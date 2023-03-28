@@ -103,15 +103,14 @@ export class CityFeedService extends Construct {
       RolePolicyLevel.DynamoReadOnly
     );
 
-    // create lambda function for postFeedFunction
-    this.postFeedFunction = new Function(
+    this.postFeedFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.postFeedFuntionName,
       {
         functionName: props.lambdaFunctionNames.postFeedFuntionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "postFeedHandler.handler",
+        entry: "src/feed/postFeed.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }

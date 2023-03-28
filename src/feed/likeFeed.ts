@@ -1,6 +1,5 @@
 import {
   FEED_DYNAMODB_TABLE_NAME,
-  MEDIA_BUCKET_NAME,
   USER_LIKED_DYNAMODB_TABLE_NAME,
   FEED_LIKE_STATUS,
 } from "../constants/constants";

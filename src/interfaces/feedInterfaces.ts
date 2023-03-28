@@ -1,18 +1,23 @@
-export interface FeedEntry {
-  id: { S: string };
-  createdAt: { N: string };
-  commentNum: { N: string };
-  content: { S: string };
-  likes: { N: string };
-  media: {
-    M: {
-      type: { S: string };
-      bucketKey: { S: string };
+import { S3 } from "aws-sdk";
+
+export interface DynamoDBFeedTablePutParams {
+  TableName: string;
+  Item: {
+    id: { S: string };
+    createdAt: { N: string };
+    commentNum: { N: string };
+    content: { S: string };
+    likes: { N: string };
+    media: {
+      M: {
+        type: { S: string };
+        bucketKey: { S: string };
+      };
     };
+    region: { S: string };
+    title: { S: string };
+    userId: { S: string };
   };
-  region: { S: string };
-  title: { S: string };
-  userId: { S: string };
 }
 
 export interface DynamoDBScanParams {
@@ -55,4 +60,11 @@ export interface DynamoDBUserLikedTableDeleteParams {
     userId: { S: string };
     feedId: { S: string };
   };
+}
+
+export interface S3ImagePutParams extends S3.PutObjectRequest {
+  Key: string;
+  Body: Buffer;
+  ContentEncoding: string;
+  ContentType: string;
 }
