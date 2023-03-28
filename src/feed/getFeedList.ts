@@ -28,6 +28,9 @@ export interface FeedEntry {
 
 export interface DynamoDBScanParams {
   TableName: string;
+  FilterExpression?: string;
+  ExpressionAttributeValues?: {};
+  ProjectionExpression?: string;
 }
 
 export interface DynamoDBQueryParams {
@@ -62,7 +65,7 @@ export const handler = async function (
     }
 
     // query params (currently all)
-    const queryParams: DynamoDBQueryParams = {
+    const queryParams: DynamoDBScanParams = {
       TableName: FEED_DYNAMODB_TABLE_NAME,
     };
 
@@ -96,10 +99,11 @@ export const handler = async function (
       const likeItems = await ddb.query(ddbLikeQueryParams).promise();
 
       // determine if feed already liked by user
-      const liked =
+      const liked = (
         likeItems.Items?.length == 0
           ? FEED_LIKE_STATUS.Unliked
-          : FEED_LIKE_STATUS.Liked;
+          : FEED_LIKE_STATUS.Liked
+      ).toString();
 
       console.log("Liked: ", liked);
 
