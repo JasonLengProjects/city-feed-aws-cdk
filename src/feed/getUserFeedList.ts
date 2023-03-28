@@ -9,21 +9,22 @@ import {
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
 import {
-  DynamoDBScanParams,
   DynamoDBQueryParams,
+  DynamoDBScanParams,
 } from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
 
-export const handler = async function (
-  event: APIGatewayEvent,
-  context: Context
-) {
+exports.handler = async function (event: APIGatewayEvent, context: Context) {
   try {
+    console.log("Header: ", event.headers);
+    const jwt = event.requestContext.authorizer?.claims;
+    console.log("JWT: ", jwt);
+
     const parameters = event.queryStringParameters;
-    const userId = parameters?.userId ?? "defaultId";
+    const userId = jwt["cognito:username"];
     const region = parameters?.region ?? "seattle";
 
     if (!REGION_MAPPING[region as keyof typeof REGION_MAPPING]) {
@@ -58,12 +59,9 @@ export const handler = async function (
       // get temp url for feed image
       const imgUrl = s3.getSignedUrl("getObject", {
         Bucket: MEDIA_BUCKET_NAME,
-        Key: item.media?.M?.bucketKey.S,
+        Key: item.media.M?.bucketKey.S,
         Expires: IMAGE_URL_EXP_SECONDS,
       });
-
-      // get id for user-liked table
-      // const entryId = getUserLikedEntryId(userId, item.id.S);
 
       // query like history
       const ddbLikeQueryParams: DynamoDBQueryParams = {
@@ -84,8 +82,6 @@ export const handler = async function (
           : FEED_LIKE_STATUS.Liked
       ).toString();
 
-      console.log("Liked: ", liked);
-
       return {
         feedId: item.id.S,
         userId: item.userId.S,
@@ -96,7 +92,7 @@ export const handler = async function (
         region: item.region.S,
         media: [
           {
-            type: item.media?.M?.type.S,
+            type: item.media.M?.type.S,
             imgUrl: imgUrl,
           },
         ],
@@ -143,9 +139,4 @@ export const handler = async function (
       body: JSON.stringify(body),
     };
   }
-};
-
-// entryId generation/hashing for dynamoDB id
-const getUserLikedEntryId = (userId: string, feedId: string) => {
-  return userId + "#" + feedId;
 };

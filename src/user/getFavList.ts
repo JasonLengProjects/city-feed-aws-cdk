@@ -7,7 +7,7 @@ import {
 } from "../constants/constants";
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
-import { DynamoDBQueryParams } from "../feed/getFeedList";
+import { DynamoDBQueryParams } from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
@@ -100,7 +100,13 @@ exports.handler = async function (event: APIGatewayEvent, context: Context) {
     let body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
-      headers: {},
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "OPTIONS,POST",
+        "X-Requested-With": "*",
+        "Access-Control-Allow-Headers":
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
+      },
       body: JSON.stringify(body),
     };
   }

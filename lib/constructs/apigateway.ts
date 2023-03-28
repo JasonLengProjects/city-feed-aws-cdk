@@ -70,6 +70,7 @@ export class CityFeedService extends Construct {
     );
     addFuntionRolePolicy(this.experimentFunction, RolePolicyLevel.All);
 
+    // create lambda function for getListFunction
     this.getListFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getFeedListFunctionName,
@@ -85,14 +86,14 @@ export class CityFeedService extends Construct {
     addFuntionRolePolicy(this.getListFunction, RolePolicyLevel.DynamoReadOnly);
 
     // create lambda function for getUserFeedListFunction
-    this.getUserFeedListFunction = new Function(
+    this.getUserFeedListFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getUserFeedListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getUserFeedListFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "getUserFeedListHandler.handler",
+        entry: "src/feed/getUserFeedList.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
@@ -136,14 +137,14 @@ export class CityFeedService extends Construct {
     );
 
     // create lambda function for likeFeedFunction
-    this.likeFeedFunction = new Function(
+    this.likeFeedFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.likeFeedFunctionName,
       {
         functionName: props.lambdaFunctionNames.likeFeedFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "likeFeedHandler.handler",
+        entry: "src/feed/likeFeed.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }

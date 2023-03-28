@@ -10,7 +10,10 @@ import {
 } from "../constants/constants";
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
-import { DynamoDBQueryParams, DynamoDBScanParams } from "../feed/getFeedList";
+import {
+  DynamoDBQueryParams,
+  DynamoDBScanParams,
+} from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
