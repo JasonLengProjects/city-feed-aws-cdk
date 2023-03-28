@@ -1,5 +1,6 @@
 import { Construct } from "constructs";
 import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import {
   RestApi,
   LambdaIntegration,
@@ -50,14 +51,14 @@ export class CityFeedService extends Construct {
     super(scope, id);
 
     // test only
-    this.experimentFunction = new Function(
+    this.experimentFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.experimentFunctionName,
       {
         functionName: props.lambdaFunctionNames.experimentFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "experimentHandler.handler",
+        entry: "src/experimentHandler.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
@@ -132,14 +133,26 @@ export class CityFeedService extends Construct {
     );
 
     // create lambda function for getListFunction
-    this.getListFunction = new Function(
+    // this.getListFunction = new Function(
+    //   this,
+    //   props.lambdaFunctionNames.getFeedListFunctionName,
+    //   {
+    //     functionName: props.lambdaFunctionNames.getFeedListFunctionName,
+    //     runtime: Runtime.NODEJS_14_X,
+    //     code: Code.fromAsset("src"),
+    //     handler: "getFeedListHandler.handler",
+    //     timeout: Duration.seconds(10),
+    //     environment: {},
+    //   }
+    // );
+    this.getListFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getFeedListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getFeedListFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "getFeedListHandler.handler",
+        entry: "src/feed/getFeedList.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
