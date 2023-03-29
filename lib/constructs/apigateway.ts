@@ -1,5 +1,6 @@
 import { Construct } from "constructs";
 import { Function, Runtime, Code } from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import {
   RestApi,
   LambdaIntegration,
@@ -11,6 +12,11 @@ import {
 import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Duration, StackProps } from "aws-cdk-lib";
 import { UserPool } from "aws-cdk-lib/aws-cognito";
+
+export enum RolePolicyLevel {
+  All,
+  DynamoReadOnly,
+}
 
 export interface CityfeedServiceProps extends StackProps {
   lambdaFunctionNames: {
@@ -50,547 +56,116 @@ export class CityFeedService extends Construct {
     super(scope, id);
 
     // test only
-    this.experimentFunction = new Function(
+    this.experimentFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.experimentFunctionName,
       {
         functionName: props.lambdaFunctionNames.experimentFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "experimentHandler.handler",
+        entry: "src/experimentHandler.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    this.experimentFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:*",
-          "s3-object-lambda:*",
-          "dynamodb:*",
-          "dax:*",
-          "application-autoscaling:DeleteScalingPolicy",
-          "application-autoscaling:DeregisterScalableTarget",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "application-autoscaling:PutScalingPolicy",
-          "application-autoscaling:RegisterScalableTarget",
-          "cloudwatch:DeleteAlarms",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:PutMetricAlarm",
-          "cloudwatch:GetMetricData",
-          "datapipeline:ActivatePipeline",
-          "datapipeline:CreatePipeline",
-          "datapipeline:DeletePipeline",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:PutPipelineDefinition",
-          "datapipeline:QueryObjects",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:CreateTopic",
-          "sns:DeleteTopic",
-          "sns:ListSubscriptions",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "sns:Subscribe",
-          "sns:Unsubscribe",
-          "sns:SetTopicAttributes",
-          "lambda:CreateFunction",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:CreateEventSourceMapping",
-          "lambda:DeleteEventSourceMapping",
-          "lambda:GetFunctionConfiguration",
-          "lambda:DeleteFunction",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "resource-groups:DeleteGroup",
-          "resource-groups:CreateGroup",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
-    );
+    addFuntionRolePolicy(this.experimentFunction, RolePolicyLevel.All);
 
     // create lambda function for getListFunction
-    this.getListFunction = new Function(
+    this.getListFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getFeedListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getFeedListFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "getFeedListHandler.handler",
+        entry: "src/feed/getFeedList.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    // policies for dynamodb-readonly
-    this.getListFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:Get*",
-          "s3:List*",
-          "s3-object-lambda:Get*",
-          "s3-object-lambda:List*",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:GetMetricData",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:QueryObjects",
-          "dynamodb:BatchGetItem",
-          "dynamodb:Describe*",
-          "dynamodb:List*",
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:PartiQLSelect",
-          "dax:Describe*",
-          "dax:List*",
-          "dax:GetItem",
-          "dax:BatchGetItem",
-          "dax:Query",
-          "dax:Scan",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:GetFunctionConfiguration",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
-    );
+    addFuntionRolePolicy(this.getListFunction, RolePolicyLevel.DynamoReadOnly);
 
     // create lambda function for getUserFeedListFunction
-    this.getUserFeedListFunction = new Function(
+    this.getUserFeedListFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getUserFeedListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getUserFeedListFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "getUserFeedListHandler.handler",
+        entry: "src/feed/getUserFeedList.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    // policies for dynamodb-readonly
-    this.getUserFeedListFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:Get*",
-          "s3:List*",
-          "s3-object-lambda:Get*",
-          "s3-object-lambda:List*",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:GetMetricData",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:QueryObjects",
-          "dynamodb:BatchGetItem",
-          "dynamodb:Describe*",
-          "dynamodb:List*",
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:PartiQLSelect",
-          "dax:Describe*",
-          "dax:List*",
-          "dax:GetItem",
-          "dax:BatchGetItem",
-          "dax:Query",
-          "dax:Scan",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:GetFunctionConfiguration",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
+    addFuntionRolePolicy(
+      this.getUserFeedListFunction,
+      RolePolicyLevel.DynamoReadOnly
     );
 
-    // create lambda function for postFeedFunction
-    this.postFeedFunction = new Function(
+    this.postFeedFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.postFeedFuntionName,
       {
         functionName: props.lambdaFunctionNames.postFeedFuntionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "postFeedHandler.handler",
+        entry: "src/feed/postFeed.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    // policies for dynamodb and s3
-    this.postFeedFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:*",
-          "s3-object-lambda:*",
-          "dynamodb:*",
-          "dax:*",
-          "application-autoscaling:DeleteScalingPolicy",
-          "application-autoscaling:DeregisterScalableTarget",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "application-autoscaling:PutScalingPolicy",
-          "application-autoscaling:RegisterScalableTarget",
-          "cloudwatch:DeleteAlarms",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:PutMetricAlarm",
-          "cloudwatch:GetMetricData",
-          "datapipeline:ActivatePipeline",
-          "datapipeline:CreatePipeline",
-          "datapipeline:DeletePipeline",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:PutPipelineDefinition",
-          "datapipeline:QueryObjects",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:CreateTopic",
-          "sns:DeleteTopic",
-          "sns:ListSubscriptions",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "sns:Subscribe",
-          "sns:Unsubscribe",
-          "sns:SetTopicAttributes",
-          "lambda:CreateFunction",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:CreateEventSourceMapping",
-          "lambda:DeleteEventSourceMapping",
-          "lambda:GetFunctionConfiguration",
-          "lambda:DeleteFunction",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "resource-groups:DeleteGroup",
-          "resource-groups:CreateGroup",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
-    );
+    addFuntionRolePolicy(this.postFeedFunction, RolePolicyLevel.All);
 
     // create lambda function for getUserDetailFunction
-    this.getUserDetailFunction = new Function(
+    this.getUserDetailFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getUserDetailFunctionName,
       {
         functionName: props.lambdaFunctionNames.getUserDetailFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "getUserDetailHandler.handler",
+        entry: "src/user/getUserDetail.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    // policies for dynamodb-readonly
-    this.getUserDetailFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:Get*",
-          "s3:List*",
-          "s3-object-lambda:Get*",
-          "s3-object-lambda:List*",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:GetMetricData",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:QueryObjects",
-          "dynamodb:BatchGetItem",
-          "dynamodb:Describe*",
-          "dynamodb:List*",
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:PartiQLSelect",
-          "dax:Describe*",
-          "dax:List*",
-          "dax:GetItem",
-          "dax:BatchGetItem",
-          "dax:Query",
-          "dax:Scan",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:GetFunctionConfiguration",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
+    addFuntionRolePolicy(
+      this.getUserDetailFunction,
+      RolePolicyLevel.DynamoReadOnly
     );
 
     // create lambda function for likeFeedFunction
-    this.likeFeedFunction = new Function(
+    this.likeFeedFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.likeFeedFunctionName,
       {
         functionName: props.lambdaFunctionNames.likeFeedFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "likeFeedHandler.handler",
+        entry: "src/feed/likeFeed.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    // policies for dynamodb and s3
-    this.likeFeedFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:*",
-          "s3-object-lambda:*",
-          "dynamodb:*",
-          "dax:*",
-          "application-autoscaling:DeleteScalingPolicy",
-          "application-autoscaling:DeregisterScalableTarget",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "application-autoscaling:PutScalingPolicy",
-          "application-autoscaling:RegisterScalableTarget",
-          "cloudwatch:DeleteAlarms",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:PutMetricAlarm",
-          "cloudwatch:GetMetricData",
-          "datapipeline:ActivatePipeline",
-          "datapipeline:CreatePipeline",
-          "datapipeline:DeletePipeline",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:PutPipelineDefinition",
-          "datapipeline:QueryObjects",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:CreateTopic",
-          "sns:DeleteTopic",
-          "sns:ListSubscriptions",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "sns:Subscribe",
-          "sns:Unsubscribe",
-          "sns:SetTopicAttributes",
-          "lambda:CreateFunction",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:CreateEventSourceMapping",
-          "lambda:DeleteEventSourceMapping",
-          "lambda:GetFunctionConfiguration",
-          "lambda:DeleteFunction",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "resource-groups:DeleteGroup",
-          "resource-groups:CreateGroup",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
-    );
+    addFuntionRolePolicy(this.likeFeedFunction, RolePolicyLevel.All);
 
     // create lambda function for getUserDetailFunction
-    this.getFavListFunction = new Function(
+    this.getFavListFunction = new NodejsFunction(
       this,
       props.lambdaFunctionNames.getFavListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getFavListFunctionName,
         runtime: Runtime.NODEJS_14_X,
-        code: Code.fromAsset("src"),
-        handler: "getFavListHandler.handler",
+        entry: "src/user/getFavList.ts",
+        handler: "handler",
         timeout: Duration.seconds(10),
         environment: {},
       }
     );
-
-    // policies for dynamodb-readonly
-    this.getFavListFunction.addToRolePolicy(
-      new PolicyStatement({
-        actions: [
-          "s3:Get*",
-          "s3:List*",
-          "s3-object-lambda:Get*",
-          "s3-object-lambda:List*",
-          "application-autoscaling:DescribeScalableTargets",
-          "application-autoscaling:DescribeScalingActivities",
-          "application-autoscaling:DescribeScalingPolicies",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:GetMetricStatistics",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:GetMetricData",
-          "datapipeline:DescribeObjects",
-          "datapipeline:DescribePipelines",
-          "datapipeline:GetPipelineDefinition",
-          "datapipeline:ListPipelines",
-          "datapipeline:QueryObjects",
-          "dynamodb:BatchGetItem",
-          "dynamodb:Describe*",
-          "dynamodb:List*",
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:PartiQLSelect",
-          "dax:Describe*",
-          "dax:List*",
-          "dax:GetItem",
-          "dax:BatchGetItem",
-          "dax:Query",
-          "dax:Scan",
-          "ec2:DescribeVpcs",
-          "ec2:DescribeSubnets",
-          "ec2:DescribeSecurityGroups",
-          "iam:GetRole",
-          "iam:ListRoles",
-          "kms:DescribeKey",
-          "kms:ListAliases",
-          "sns:ListSubscriptionsByTopic",
-          "sns:ListTopics",
-          "lambda:ListFunctions",
-          "lambda:ListEventSourceMappings",
-          "lambda:GetFunctionConfiguration",
-          "resource-groups:ListGroups",
-          "resource-groups:ListGroupResources",
-          "resource-groups:GetGroup",
-          "resource-groups:GetGroupQuery",
-          "tag:GetResources",
-          "kinesis:ListStreams",
-          "kinesis:DescribeStream",
-          "kinesis:DescribeStreamSummary",
-        ],
-        resources: ["*"],
-      })
+    addFuntionRolePolicy(
+      this.getFavListFunction,
+      RolePolicyLevel.DynamoReadOnly
     );
 
     // create rest api
@@ -759,3 +334,137 @@ export class CityFeedService extends Construct {
     });
   }
 }
+
+const addFuntionRolePolicy = (
+  targetFunction: Function,
+  policyLevel: RolePolicyLevel
+) => {
+  if (policyLevel == RolePolicyLevel.All) {
+    targetFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "s3:*",
+          "s3-object-lambda:*",
+          "dynamodb:*",
+          "dax:*",
+          "application-autoscaling:DeleteScalingPolicy",
+          "application-autoscaling:DeregisterScalableTarget",
+          "application-autoscaling:DescribeScalableTargets",
+          "application-autoscaling:DescribeScalingActivities",
+          "application-autoscaling:DescribeScalingPolicies",
+          "application-autoscaling:PutScalingPolicy",
+          "application-autoscaling:RegisterScalableTarget",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:GetMetricData",
+          "datapipeline:ActivatePipeline",
+          "datapipeline:CreatePipeline",
+          "datapipeline:DeletePipeline",
+          "datapipeline:DescribeObjects",
+          "datapipeline:DescribePipelines",
+          "datapipeline:GetPipelineDefinition",
+          "datapipeline:ListPipelines",
+          "datapipeline:PutPipelineDefinition",
+          "datapipeline:QueryObjects",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "iam:GetRole",
+          "iam:ListRoles",
+          "kms:DescribeKey",
+          "kms:ListAliases",
+          "sns:CreateTopic",
+          "sns:DeleteTopic",
+          "sns:ListSubscriptions",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTopics",
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:SetTopicAttributes",
+          "lambda:CreateFunction",
+          "lambda:ListFunctions",
+          "lambda:ListEventSourceMappings",
+          "lambda:CreateEventSourceMapping",
+          "lambda:DeleteEventSourceMapping",
+          "lambda:GetFunctionConfiguration",
+          "lambda:DeleteFunction",
+          "resource-groups:ListGroups",
+          "resource-groups:ListGroupResources",
+          "resource-groups:GetGroup",
+          "resource-groups:GetGroupQuery",
+          "resource-groups:DeleteGroup",
+          "resource-groups:CreateGroup",
+          "tag:GetResources",
+          "kinesis:ListStreams",
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+        ],
+        resources: ["*"],
+      })
+    );
+  } else if (policyLevel == RolePolicyLevel.DynamoReadOnly) {
+    targetFunction.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "s3:Get*",
+          "s3:List*",
+          "s3-object-lambda:Get*",
+          "s3-object-lambda:List*",
+          "application-autoscaling:DescribeScalableTargets",
+          "application-autoscaling:DescribeScalingActivities",
+          "application-autoscaling:DescribeScalingPolicies",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:GetMetricData",
+          "datapipeline:DescribeObjects",
+          "datapipeline:DescribePipelines",
+          "datapipeline:GetPipelineDefinition",
+          "datapipeline:ListPipelines",
+          "datapipeline:QueryObjects",
+          "dynamodb:BatchGetItem",
+          "dynamodb:Describe*",
+          "dynamodb:List*",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:PartiQLSelect",
+          "dax:Describe*",
+          "dax:List*",
+          "dax:GetItem",
+          "dax:BatchGetItem",
+          "dax:Query",
+          "dax:Scan",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeSecurityGroups",
+          "iam:GetRole",
+          "iam:ListRoles",
+          "kms:DescribeKey",
+          "kms:ListAliases",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTopics",
+          "lambda:ListFunctions",
+          "lambda:ListEventSourceMappings",
+          "lambda:GetFunctionConfiguration",
+          "resource-groups:ListGroups",
+          "resource-groups:ListGroupResources",
+          "resource-groups:GetGroup",
+          "resource-groups:GetGroupQuery",
+          "tag:GetResources",
+          "kinesis:ListStreams",
+          "kinesis:DescribeStream",
+          "kinesis:DescribeStreamSummary",
+        ],
+        resources: ["*"],
+      })
+    );
+  }
+};

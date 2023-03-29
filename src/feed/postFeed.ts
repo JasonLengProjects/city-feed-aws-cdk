@@ -1,24 +1,25 @@
-const {
-  REGION_MAPPING,
+import {
   FEED_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
-} = require("./constants/constants");
-const AWS = require("aws-sdk");
-const { time } = require("console");
+} from "../constants/constants";
+import AWS = require("aws-sdk");
+import { Context, APIGatewayEvent } from "aws-lambda";
+import {
+  DynamoDBFeedTablePutParams,
+  S3ImagePutParams,
+} from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
-const s3Bucket = new AWS.S3({ params: { Bucket: MEDIA_BUCKET_NAME } });
+const s3Bucket = new AWS.S3();
 var ddb = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
 
-exports.handler = async function (event, context) {
-  const requestBody = JSON.parse(event.body);
-  console.log(requestBody);
-
+exports.handler = async function (event: APIGatewayEvent, context: Context) {
   try {
+    const requestBody = JSON.parse(event.body ?? "");
+    console.log(requestBody);
     const userId = requestBody.userId;
     const title = requestBody.title;
     const content = requestBody.content;
-    // const timestamp = requestBody.timestamp;
     const timestamp = Date.now().toString();
     const region = requestBody.region;
     const fileType = requestBody.media[0].type;
@@ -33,11 +34,12 @@ exports.handler = async function (event, context) {
       "base64"
     );
     // params for s3 put
-    const s3Data = {
+    const s3Data: S3ImagePutParams = {
       Key: key,
       Body: buf,
       ContentEncoding: "base64",
       ContentType: "image/" + fileType,
+      Bucket: MEDIA_BUCKET_NAME,
     };
 
     await s3Bucket
@@ -45,7 +47,6 @@ exports.handler = async function (event, context) {
         if (err) {
           console.log(err);
           console.log("Error uploading data: ", data);
-          key = "INVALID_KEY";
         } else {
           console.log("Successfully uploaded the image!");
         }
@@ -55,7 +56,7 @@ exports.handler = async function (event, context) {
     // handle DynamoDB entry
     const entryId = getEntryId(userId, timestamp);
 
-    const ddbParams = {
+    const ddbParams: DynamoDBFeedTablePutParams = {
       TableName: FEED_DYNAMODB_TABLE_NAME,
       Item: {
         id: { S: entryId },
@@ -97,7 +98,7 @@ exports.handler = async function (event, context) {
       },
       body: JSON.stringify(body),
     };
-  } catch (error) {
+  } catch (error: any) {
     let body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
@@ -114,11 +115,15 @@ exports.handler = async function (event, context) {
 };
 
 // entryId generation/hashing for dynamoDB id
-const getEntryId = (userId, timestamp) => {
+const getEntryId = (userId: string, timestamp: string): string => {
   return userId + "#" + timestamp;
 };
 
 // key generation/hashing for s3 object
-const getNewKey = (userId, timestamp, fileType) => {
+const getNewKey = (
+  userId: string,
+  timestamp: string,
+  fileType: string
+): string => {
   return userId + "#" + timestamp + "." + fileType;
 };

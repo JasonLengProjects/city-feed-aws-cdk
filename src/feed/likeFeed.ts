@@ -1,29 +1,59 @@
-const {
+import {
   FEED_DYNAMODB_TABLE_NAME,
-  MEDIA_BUCKET_NAME,
   USER_LIKED_DYNAMODB_TABLE_NAME,
   FEED_LIKE_STATUS,
-} = require("./constants/constants");
-const AWS = require("aws-sdk");
+} from "../constants/constants";
+import AWS = require("aws-sdk");
+import { Context, APIGatewayEvent } from "aws-lambda";
+import {
+  DynamoDBFeedTableUpdateParams,
+  DynamoDBQueryParams,
+  DynamoDBUserLikedTableDeleteParams,
+} from "../interfaces/feedInterfaces";
+import { DynamoDBUserLikedTablePutParams } from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
 var ddb = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
 
-exports.handler = async function (event, context) {
-  const requestBody = JSON.parse(event.body);
-  console.log("Request body: ", requestBody);
-
+exports.handler = async function (event: APIGatewayEvent, context: Context) {
   try {
+    const requestBody = JSON.parse(event.body ?? "{}");
+    console.log("Request body: ", requestBody);
     const userId = requestBody.userId;
     const feedId = requestBody.feedId;
     const like = requestBody.like;
     const timestamp = Date.now().toString();
 
-    // handle DynamoDB entry
-    // const entryId = getEntryId(userId, feedId);
+    // query feed
+    const ddbFeedQueryParams: DynamoDBQueryParams = {
+      TableName: FEED_DYNAMODB_TABLE_NAME,
+      ExpressionAttributeValues: {
+        ":i": { S: feedId },
+      },
+      KeyConditionExpression: "id = :i",
+      ProjectionExpression: "id, likes, createdAt",
+    };
+    const feedItems = await ddb.query(ddbFeedQueryParams).promise();
+    console.log("Feed items: ", feedItems.Items);
+    if (feedItems.Items != null && feedItems.Items.length == 0) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "OPTIONS,POST",
+          "X-Requested-With": "*",
+          "Access-Control-Allow-Headers":
+            "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
+        },
+        body: JSON.stringify({
+          code: "1",
+          msg: "Feed not found.",
+        }),
+      };
+    }
 
     // query like history
-    const ddbLikeQueryParams = {
+    const ddbLikeQueryParams: DynamoDBQueryParams = {
       TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
       ExpressionAttributeValues: {
         ":ui": { S: userId },
@@ -36,28 +66,17 @@ exports.handler = async function (event, context) {
     const likeItems = await ddb.query(ddbLikeQueryParams).promise();
     console.log("Like items: ", likeItems.Items);
 
-    // query feed
-    const ddbFeedQueryParams = {
-      TableName: FEED_DYNAMODB_TABLE_NAME,
-      ExpressionAttributeValues: {
-        ":i": { S: feedId },
-      },
-      KeyConditionExpression: "id = :i",
-      ProjectionExpression: "id, likes, createdAt",
-    };
-    const feedItems = await ddb.query(ddbFeedQueryParams).promise();
-    console.log("Feed items: ", feedItems.Items);
-
     // return variables
     let liked =
-      likeItems.Items.length == 0
+      likeItems.Items?.length == 0
         ? FEED_LIKE_STATUS.Unliked
         : FEED_LIKE_STATUS.Liked;
-    let likes = parseInt(feedItems.Items[0].likes.N) || 0;
+    let likes =
+      parseInt(feedItems.Items ? feedItems.Items[0].likes.N! : "0") || 0;
 
-    if (likeItems.Items.length == 0 && like == FEED_LIKE_STATUS.Liked) {
+    if (likeItems.Items?.length == 0 && like == FEED_LIKE_STATUS.Liked) {
       // no like history && user likes the feed
-      const newLikeParams = {
+      const newLikeParams: DynamoDBUserLikedTablePutParams = {
         TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
         Item: {
           userId: { S: userId },
@@ -78,11 +97,13 @@ exports.handler = async function (event, context) {
       // increment return likes
       likes += 1;
       // update feed table item
-      const ddbFeedUpdateParams = {
+      const ddbFeedUpdateParams: DynamoDBFeedTableUpdateParams = {
         TableName: FEED_DYNAMODB_TABLE_NAME,
         Key: {
           id: { S: feedId },
-          createdAt: { N: feedItems.Items[0].createdAt.N },
+          createdAt: {
+            N: feedItems.Items ? feedItems.Items[0].createdAt.N! : "0",
+          },
         },
         ExpressionAttributeNames: {
           "#L": "likes",
@@ -100,16 +121,15 @@ exports.handler = async function (event, context) {
         })
         .promise();
     } else if (
-      likeItems.Items.length != 0 &&
+      likeItems.Items?.length != 0 &&
       like == FEED_LIKE_STATUS.Unliked
     ) {
       // liked before && user unlikes the feed
-      const deleteLikeParams = {
+      const deleteLikeParams: DynamoDBUserLikedTableDeleteParams = {
         TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
         Key: {
           userId: { S: userId },
           feedId: { S: feedId },
-          // likedAt: { N: likeItems.Items[0].likedAt.N },
         },
       };
       await ddb
@@ -125,11 +145,13 @@ exports.handler = async function (event, context) {
 
       likes = likes - 1 < 0 ? 0 : likes - 1;
 
-      const ddbFeedUpdateParams = {
+      const ddbFeedUpdateParams: DynamoDBFeedTableUpdateParams = {
         TableName: FEED_DYNAMODB_TABLE_NAME,
         Key: {
           id: { S: feedId },
-          createdAt: { N: feedItems.Items[0].createdAt.N },
+          createdAt: {
+            N: feedItems.Items ? feedItems.Items[0].createdAt.N! : "0",
+          },
         },
         ExpressionAttributeNames: {
           "#L": "likes",
@@ -166,7 +188,7 @@ exports.handler = async function (event, context) {
       },
       body: JSON.stringify(body),
     };
-  } catch (error) {
+  } catch (error: any) {
     let body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
@@ -180,9 +202,4 @@ exports.handler = async function (event, context) {
       body: JSON.stringify(body),
     };
   }
-};
-
-// entryId generation/hashing for dynamoDB id
-const getEntryId = (userId, feedId) => {
-  return userId + "#" + feedId;
 };
