@@ -13,7 +13,10 @@ AWS.config.update({ region: "us-west-2" });
 const s3Bucket = new AWS.S3();
 var ddb = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
 
-exports.handler = async function (event: APIGatewayEvent, context: Context) {
+export const handler = async function (
+  event: APIGatewayEvent,
+  context: Context
+) {
   try {
     const requestBody = JSON.parse(event.body ?? "");
     console.log(requestBody);

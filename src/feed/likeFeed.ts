@@ -12,10 +12,20 @@ import {
 } from "../interfaces/feedInterfaces";
 import { DynamoDBUserLikedTablePutParams } from "../interfaces/feedInterfaces";
 
+export interface LikeFeedResponseBody {
+  code: string;
+  msg: string;
+  liked: string;
+  likes: string;
+}
+
 AWS.config.update({ region: "us-west-2" });
 var ddb = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
 
-exports.handler = async function (event: APIGatewayEvent, context: Context) {
+export const handler = async function (
+  event: APIGatewayEvent,
+  context: Context
+) {
   try {
     const requestBody = JSON.parse(event.body ?? "{}");
     console.log("Request body: ", requestBody);
@@ -170,11 +180,11 @@ exports.handler = async function (event: APIGatewayEvent, context: Context) {
         .promise();
     }
 
-    let body = {
+    let body: LikeFeedResponseBody = {
       code: "0",
       msg: "Success",
-      liked: liked,
-      likes: likes,
+      liked: liked.toString(),
+      likes: likes.toString(),
     };
 
     return {
