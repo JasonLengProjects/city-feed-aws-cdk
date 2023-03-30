@@ -9,11 +9,39 @@ import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
 import { DynamoDBQueryParams } from "../interfaces/feedInterfaces";
 
+export interface FeedItem {
+  feedId: string;
+  userId: string;
+  title: string;
+  avatar: string;
+  content: string;
+  timestamp: string;
+  region: string;
+  media: [
+    {
+      type: string;
+      imgUrl: string;
+    }
+  ];
+  likes: string;
+  liked: string;
+  commentNum: string;
+}
+
+export interface GetFavListResponseBody {
+  code: string;
+  msg: string;
+  feedList: FeedItem[];
+}
+
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
 
-exports.handler = async function (event: APIGatewayEvent, context: Context) {
+export const handler = async function (
+  event: APIGatewayEvent,
+  context: Context
+) {
   try {
     const parameters = event.queryStringParameters;
     const userId = parameters?.userId ?? "defaultId";
@@ -55,34 +83,36 @@ exports.handler = async function (event: APIGatewayEvent, context: Context) {
         Expires: IMAGE_URL_EXP_SECONDS,
       });
 
-      return {
-        feedId: feedItem?.id.S,
-        userId: feedItem?.userId.S,
-        title: feedItem?.title.S,
+      const feedItemObj: FeedItem = {
+        feedId: feedItem?.id.S!,
+        userId: feedItem?.userId.S!,
+        title: feedItem?.title.S!,
         avatar: "https://www.w3schools.com/howto/img_avatar.png",
-        content: feedItem?.content.S,
-        timestamp: feedItem?.createdAt.N,
-        region: feedItem?.region.S,
+        content: feedItem?.content.S!,
+        timestamp: feedItem?.createdAt.N!,
+        region: feedItem?.region.S!,
         media: [
           {
-            type: feedItem?.media.M?.type.S,
+            type: feedItem?.media.M?.type.S!,
             imgUrl: imgUrl,
           },
         ],
-        likes: feedItem?.likes.N,
-        liked: FEED_LIKE_STATUS.Liked,
-        commentNum: feedItem?.commentNum.N,
+        likes: feedItem?.likes.N!,
+        liked: FEED_LIKE_STATUS.Liked.toString(),
+        commentNum: feedItem?.commentNum.N!,
       };
+
+      return feedItemObj;
     });
 
     const feedList = await Promise.all(feedListPromises ?? []);
 
     console.log("FeedList: ", feedList);
 
-    let body = {
+    let body: GetFavListResponseBody = {
       code: "0",
       msg: "Success",
-      feedList: feedList,
+      feedList: feedList!,
     };
 
     return {

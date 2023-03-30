@@ -19,7 +19,10 @@ AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
 
-exports.handler = async function (event: APIGatewayEvent, context: Context) {
+export const handler = async function (
+  event: APIGatewayEvent,
+  context: Context
+) {
   try {
     const parameters = event.queryStringParameters;
     const userId = parameters?.userId ?? "defaultId";
