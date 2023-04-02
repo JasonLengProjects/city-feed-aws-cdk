@@ -61,7 +61,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.experimentFunctionName,
       {
         functionName: props.lambdaFunctionNames.experimentFunctionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/experimentHandler.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
@@ -76,7 +76,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.getFeedListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getFeedListFunctionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/feed/getFeedList.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
@@ -91,7 +91,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.getUserFeedListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getUserFeedListFunctionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/feed/getUserFeedList.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
@@ -108,7 +108,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.postFeedFuntionName,
       {
         functionName: props.lambdaFunctionNames.postFeedFuntionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/feed/postFeed.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
@@ -123,7 +123,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.getUserDetailFunctionName,
       {
         functionName: props.lambdaFunctionNames.getUserDetailFunctionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/user/getUserDetail.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
@@ -141,7 +141,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.likeFeedFunctionName,
       {
         functionName: props.lambdaFunctionNames.likeFeedFunctionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/feed/likeFeed.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
@@ -156,7 +156,7 @@ export class CityFeedService extends Construct {
       props.lambdaFunctionNames.getFavListFunctionName,
       {
         functionName: props.lambdaFunctionNames.getFavListFunctionName,
-        runtime: Runtime.NODEJS_14_X,
+        runtime: Runtime.NODEJS_18_X,
         entry: "src/user/getFavList.ts",
         handler: "handler",
         timeout: Duration.seconds(10),
