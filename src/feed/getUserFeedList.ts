@@ -27,7 +27,7 @@ export const handler = async function (
     console.log("JWT: ", jwt);
 
     const parameters = event.queryStringParameters;
-    const userId = jwt["cognito:username"];
+    const userId = jwt["cognito:username"] ?? "defaultId";
     const region = parameters?.region ?? "seattle";
 
     if (!REGION_MAPPING[region as keyof typeof REGION_MAPPING]) {

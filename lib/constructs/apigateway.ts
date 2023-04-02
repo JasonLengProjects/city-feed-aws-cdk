@@ -301,6 +301,10 @@ export class CityFeedService extends Construct {
     const postFeedResource = this.restApi.root.addResource("postFeed");
     postFeedResource.addMethod("POST", postFeedRestApiIntegration, {
       apiKeyRequired: true,
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: {
+        authorizerId: this.mainAuthorizer.ref,
+      },
     });
 
     // source for getting user detail
@@ -314,6 +318,10 @@ export class CityFeedService extends Construct {
     const likeFeedResource = this.restApi.root.addResource("likeFeed");
     likeFeedResource.addMethod("POST", likeFeedRestApiIntegration, {
       apiKeyRequired: true,
+      authorizationType: AuthorizationType.COGNITO,
+      authorizer: {
+        authorizerId: this.mainAuthorizer.ref,
+      },
     });
 
     // source for getting favorite list

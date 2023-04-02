@@ -18,9 +18,13 @@ export const handler = async function (
   context: Context
 ) {
   try {
+    const jwt = event.requestContext.authorizer?.claims;
+    console.log("JWT: ", jwt);
+
     const requestBody = JSON.parse(event.body ?? "");
     console.log(requestBody);
-    const userId = requestBody.userId;
+
+    const userId = jwt["cognito:username"] ?? "defaultId";
     const title = requestBody.title;
     const content = requestBody.content;
     const timestamp = Date.now().toString();
