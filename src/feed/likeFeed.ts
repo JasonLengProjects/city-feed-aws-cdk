@@ -27,9 +27,13 @@ export const handler = async function (
   context: Context
 ) {
   try {
+    const jwt = event.requestContext.authorizer?.claims;
+    console.log("JWT: ", jwt);
+
     const requestBody = JSON.parse(event.body ?? "{}");
     console.log("Request body: ", requestBody);
-    const userId = requestBody.userId;
+
+    const userId = jwt["cognito:username"] ?? "defaultId";
     const feedId = requestBody.feedId;
     const like = requestBody.like;
     const timestamp = Date.now().toString();
