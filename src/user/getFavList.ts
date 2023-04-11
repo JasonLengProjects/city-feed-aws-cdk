@@ -8,30 +8,12 @@ import {
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
 import { DynamoDBQueryParams } from "../interfaces/feedInterfaces";
-
-export interface FeedItem {
-  feedId: string;
-  userId: string;
-  title: string;
-  avatar: string;
-  content: string;
-  timestamp: string;
-  region: string;
-  media: [
-    {
-      type: string;
-      imgUrl: string;
-    }
-  ];
-  likes: string;
-  liked: string;
-  commentNum: string;
-}
+import { FeedResponseObj } from "../interfaces/feedInterfaces";
 
 export interface GetFavListResponseBody {
   code: string;
   msg: string;
-  feedList: FeedItem[];
+  feedList: FeedResponseObj[];
 }
 
 AWS.config.update({ region: "us-west-2" });
@@ -83,7 +65,7 @@ export const handler = async function (
         Expires: IMAGE_URL_EXP_SECONDS,
       });
 
-      const feedItemObj: FeedItem = {
+      const feedItemObj: FeedResponseObj = {
         feedId: feedItem?.id.S!,
         userId: feedItem?.userId.S!,
         title: feedItem?.title.S!,

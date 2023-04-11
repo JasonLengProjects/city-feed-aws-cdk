@@ -1,6 +1,7 @@
 import {
   FEED_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
+  REGION_MAPPING,
 } from "../constants/constants";
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
@@ -12,6 +13,18 @@ import {
 AWS.config.update({ region: "us-west-2" });
 const s3Bucket = new AWS.S3();
 var ddb = new AWS.DynamoDB({ apiVersion: "2012-08-10" });
+
+enum FeedStatus {
+  PUBLIC = "public",
+  PRIVATE = "private",
+  DELETED = "deleted",
+}
+enum AllowedFileTypes {
+  JPG = "jpg",
+  PNG = "png",
+  GIF = "gif",
+  JPEG = "jpeg",
+}
 
 export const handler = async function (
   event: APIGatewayEvent,
@@ -29,8 +42,19 @@ export const handler = async function (
     const content = requestBody.content;
     const timestamp = Date.now().toString();
     const region = requestBody.region;
+    if (!REGION_MAPPING[region as keyof typeof REGION_MAPPING]) {
+      return getBadResponse("We don't support this region yet.");
+    }
     const fileType = requestBody.media[0].type;
+    if (!Object.values(AllowedFileTypes).includes(fileType)) {
+      return getBadResponse("Invalid file type.");
+    }
     const fileBase64 = requestBody.media[0].base64;
+    const feedStatus = requestBody.feedStatus ?? "public";
+    if (!Object.values(FeedStatus).includes(feedStatus)) {
+      return getBadResponse("Invalid feed status.");
+    }
+    const hashtagList = requestBody.hashtagList ?? ["lifestyle"];
 
     // save image to S3 first
     const key = getNewKey(userId, timestamp, fileType);
@@ -75,6 +99,8 @@ export const handler = async function (
         region: { S: region },
         title: { S: title },
         userId: { S: userId },
+        status: { S: feedStatus },
+        hashtags: { SS: hashtagList },
       },
     };
 
@@ -133,4 +159,21 @@ const getNewKey = (
   fileType: string
 ): string => {
   return userId + "#" + timestamp + "." + fileType;
+};
+
+const getBadResponse = (msg: string) => {
+  return {
+    statusCode: 400,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "OPTIONS,POST",
+      "X-Requested-With": "*",
+      "Access-Control-Allow-Headers":
+        "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
+    },
+    body: JSON.stringify({
+      code: "1",
+      msg: msg,
+    }),
+  };
 };
