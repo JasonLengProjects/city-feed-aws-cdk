@@ -1,5 +1,24 @@
 import { S3 } from "aws-sdk";
 
+export interface FeedResponseObj {
+  feedId: string;
+  userId: string;
+  title: string;
+  avatar: string;
+  content: string;
+  timestamp: string;
+  region: string;
+  media: [
+    {
+      type: string;
+      imgUrl: string;
+    }
+  ];
+  likes: string;
+  liked: string;
+  commentNum: string;
+}
+
 export interface DynamoDBFeedTablePutParams {
   TableName: string;
   Item: {
@@ -17,6 +36,8 @@ export interface DynamoDBFeedTablePutParams {
     region: { S: string };
     title: { S: string };
     userId: { S: string };
+    status: { S: string };
+    hashtags: { SS: string[] };
   };
 }
 
