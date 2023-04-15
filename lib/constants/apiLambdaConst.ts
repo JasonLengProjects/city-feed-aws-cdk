@@ -25,6 +25,8 @@ export const S3_BUCKET_NAMES = {
 export const DYNAMODB_TABLE_NAMES = {
   FEED_DYNAMODB_TABLE_NAME: "city-feed-feed-table",
 
+  FEED_DYNMODB_CREATED_AT_INDEX_NAME: "city-feed-feed-table-created-at-index",
+
   USER_DYNAMODB_TABLE_NAME: "city-feed-user-table",
 
   USER_LIKED_DYNAMODB_TABLE_NAME: "city-feed-user-liked-table",

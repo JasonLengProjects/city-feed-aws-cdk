@@ -1,9 +1,19 @@
 import { StackProps, RemovalPolicy } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Table, BillingMode, AttributeType } from "aws-cdk-lib/aws-dynamodb";
+import {
+  Table,
+  BillingMode,
+  AttributeType,
+  ProjectionType,
+} from "aws-cdk-lib/aws-dynamodb";
 
 export interface DynamoDBProps extends StackProps {
-  dynamoDBFeedTableName: string;
+  dynamoDBFeedTableNames: {
+    tableName: string;
+    indexNames: {
+      createdAtIndexName: string;
+    };
+  };
   dynamoDBUserTableName: string;
   dynamoDBUserLikedTableName: string;
 }
@@ -16,31 +26,42 @@ export class DynamoDBConstruct extends Construct {
   constructor(scope: Construct, id: string, props: DynamoDBProps) {
     super(scope, id);
 
+    // create a table for feeds
     this.feedTable = new Table(this, `${id}-feed-table`, {
-      tableName: props.dynamoDBFeedTableName,
-      billingMode: BillingMode.PROVISIONED,
-      readCapacity: 5,
-      writeCapacity: 5,
+      tableName: props.dynamoDBFeedTableNames.tableName,
+      billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: { name: "id", type: AttributeType.STRING },
       sortKey: { name: "createdAt", type: AttributeType.NUMBER },
     });
 
+    // create a global secondary index for querying by timestamp (createdAt)
+    this.feedTable.addGlobalSecondaryIndex({
+      indexName: props.dynamoDBFeedTableNames.indexNames.createdAtIndexName,
+      partitionKey: {
+        name: "status",
+        type: AttributeType.STRING,
+      },
+      sortKey: {
+        name: "createdAt",
+        type: AttributeType.NUMBER,
+      },
+      projectionType: ProjectionType.ALL,
+    });
+
+    // create a table for users
     this.userTable = new Table(this, `${id}-user-table`, {
       tableName: props.dynamoDBUserTableName,
-      billingMode: BillingMode.PROVISIONED,
-      readCapacity: 5,
-      writeCapacity: 5,
+      billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: { name: "id", type: AttributeType.STRING },
       sortKey: { name: "joinedAt", type: AttributeType.NUMBER },
     });
 
+    // create a table for users' like history
     this.userLikedTable = new Table(this, `${id}-user-liked-table`, {
       tableName: props.dynamoDBUserLikedTableName,
-      billingMode: BillingMode.PROVISIONED,
-      readCapacity: 5,
-      writeCapacity: 5,
+      billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: { name: "userId", type: AttributeType.STRING },
       // sortKey: { name: "likedAt", type: AttributeType.NUMBER },
