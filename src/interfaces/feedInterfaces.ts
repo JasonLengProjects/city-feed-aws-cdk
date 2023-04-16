@@ -50,9 +50,13 @@ export interface DynamoDBScanParams {
 
 export interface DynamoDBQueryParams {
   TableName: string;
+  IndexName?: string;
+  ExpressionAttributeNames?: {};
   ExpressionAttributeValues?: {};
   KeyConditionExpression?: string;
   ProjectionExpression?: string;
+  ScanIndexForward?: boolean;
+  Limit?: number;
 }
 
 export interface DynamoDBUserLikedTablePutParams {

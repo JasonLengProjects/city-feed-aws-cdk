@@ -5,6 +5,9 @@ export const REGION_MAPPING = {
 
 export const FEED_DYNAMODB_TABLE_NAME = "city-feed-feed-table";
 
+export const FEED_DYNMODB_CREATED_AT_INDEX_NAME =
+  "city-feed-feed-table-created-at-index";
+
 export const USER_DYNAMODB_TABLE_NAME = "city-feed-user-table";
 
 export const USER_LIKED_DYNAMODB_TABLE_NAME = "city-feed-user-liked-table";
