@@ -27,9 +27,14 @@ export const DYNAMODB_TABLE_NAMES = {
 
   FEED_DYNMODB_CREATED_AT_INDEX_NAME: "city-feed-feed-table-created-at-index",
 
+  FEED_DYNMODB_USER_CREATED_AT_INDEX_NAME:
+    "city-feed-feed-table-user-created-at-index",
+
   USER_DYNAMODB_TABLE_NAME: "city-feed-user-table",
 
   USER_LIKED_DYNAMODB_TABLE_NAME: "city-feed-user-liked-table",
+
+  USER_LIKED_DYNAMODB_USER_LIKED_AT_INDEX_NAME: "city-feed-user-liked-table-user-liked-at-index",
 };
 
 export const COGNITO_NAMES = {

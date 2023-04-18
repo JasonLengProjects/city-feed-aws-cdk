@@ -66,11 +66,18 @@ export class CityfeedCdkStack extends cdk.Stack {
         indexNames: {
           createdAtIndexName:
             DYNAMODB_TABLE_NAMES.FEED_DYNMODB_CREATED_AT_INDEX_NAME,
+          userCreatedAtIndexName:
+            DYNAMODB_TABLE_NAMES.FEED_DYNMODB_USER_CREATED_AT_INDEX_NAME,
         },
       },
       dynamoDBUserTableName: DYNAMODB_TABLE_NAMES.USER_DYNAMODB_TABLE_NAME,
-      dynamoDBUserLikedTableName:
-        DYNAMODB_TABLE_NAMES.USER_LIKED_DYNAMODB_TABLE_NAME,
+      dynamoDBUserLikedTableNames: {
+        tableName: DYNAMODB_TABLE_NAMES.USER_LIKED_DYNAMODB_TABLE_NAME,
+        indexNames: {
+          userLikedAtIndexName:
+            DYNAMODB_TABLE_NAMES.USER_LIKED_DYNAMODB_USER_LIKED_AT_INDEX_NAME,
+        },
+      },
     });
   }
 }
