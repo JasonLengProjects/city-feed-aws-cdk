@@ -1,6 +1,7 @@
 import {
   REGION_MAPPING,
   FEED_DYNAMODB_TABLE_NAME,
+  FEED_DYNMODB_CREATED_AT_INDEX_NAME,
   USER_LIKED_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
   IMAGE_URL_EXP_SECONDS,
@@ -8,10 +9,7 @@ import {
 } from "../constants/constants";
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
-import {
-  DynamoDBQueryParams,
-  DynamoDBScanParams,
-} from "../interfaces/feedInterfaces";
+import { DynamoDBQueryParams } from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
@@ -47,13 +45,23 @@ export const handler = async function (
       };
     }
 
-    // query params (currently all)
-    const queryParams: DynamoDBScanParams = {
+    // query params for 10 lastest feeds
+    const queryParams: DynamoDBQueryParams = {
       TableName: FEED_DYNAMODB_TABLE_NAME,
+      IndexName: FEED_DYNMODB_CREATED_AT_INDEX_NAME,
+      KeyConditionExpression: "#status = :status",
+      ExpressionAttributeNames: {
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":status": { S: "public" },
+      },
+      ScanIndexForward: false,
+      Limit: 10,
     };
 
-    // query multiple with scan
-    const items = await ddb.scan(queryParams).promise();
+    // query feeds
+    const items = await ddb.query(queryParams).promise();
 
     console.log("Items: ", items.Items);
 
@@ -102,6 +110,8 @@ export const handler = async function (
         likes: item.likes.N,
         liked: liked,
         commentNum: item.commentNum.N,
+        hashtags: item.hashtags.SS,
+        status: item.status.S,
       };
     });
 
@@ -112,9 +122,10 @@ export const handler = async function (
     let body = {
       code: "0",
       msg: "Success",
-      feedList: feedList.sort(
-        (a, b) => parseInt(b.timestamp!, 10) - parseInt(a.timestamp!, 10)
-      ), // show feeds in order from latest to earliest
+      // feedList: feedList.sort(
+      //   (a, b) => parseInt(b.timestamp!, 10) - parseInt(a.timestamp!, 10)
+      // ), // show feeds in order from latest to earliest
+      feedList: feedList,
     };
 
     return {
