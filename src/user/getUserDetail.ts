@@ -1,6 +1,6 @@
 import {
-  REGION_MAPPING,
   FEED_DYNAMODB_TABLE_NAME,
+  FEED_DYNMODB_USER_CREATED_AT_INDEX_NAME,
   USER_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
   USER_AVATAR_BUCKET_NAME,
@@ -10,10 +10,7 @@ import {
 } from "../constants/constants";
 import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
-import {
-  DynamoDBQueryParams,
-  DynamoDBScanParams,
-} from "../interfaces/feedInterfaces";
+import { DynamoDBQueryParams } from "../interfaces/feedInterfaces";
 
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
@@ -27,10 +24,10 @@ export const handler = async function (
     const parameters = event.queryStringParameters;
     const userId = parameters?.userId ?? "defaultId";
 
-    // query params
-    const queryParams: DynamoDBScanParams = {
+    // query params for checking the existence of target user
+    const queryParams: DynamoDBQueryParams = {
       TableName: USER_DYNAMODB_TABLE_NAME,
-      FilterExpression: "id = :id",
+      KeyConditionExpression: "id = :id",
       ExpressionAttributeValues: {
         ":id": { S: userId },
       },
@@ -38,8 +35,8 @@ export const handler = async function (
 
     let body;
 
-    // query user with scan
-    const userItems = await ddb.scan(queryParams).promise();
+    // query user
+    const userItems = await ddb.query(queryParams).promise();
 
     if (userItems?.Items?.length == 0) {
       body = {
@@ -48,16 +45,21 @@ export const handler = async function (
       };
     } else {
       const userItem = userItems.Items ? userItems.Items[0] : null;
-      const feedQueryParams: DynamoDBScanParams = {
+
+      // query params for 10 lastest feeds created by target user
+      const feedQueryParams: DynamoDBQueryParams = {
         TableName: FEED_DYNAMODB_TABLE_NAME,
-        FilterExpression: "userId = :uid",
+        IndexName: FEED_DYNMODB_USER_CREATED_AT_INDEX_NAME,
+        KeyConditionExpression: "userId = :ui",
         ExpressionAttributeValues: {
-          ":uid": { S: userId },
+          ":ui": { S: userId },
         },
+        ScanIndexForward: false,
+        Limit: 10,
       };
 
-      // query user feeds with scan
-      const feedItems = await ddb.scan(feedQueryParams).promise();
+      // query user feeds written by target user
+      const feedItems = await ddb.query(feedQueryParams).promise();
 
       // map items into response body
       const feedListPromises = feedItems.Items?.map(async (item) => {
@@ -121,9 +123,10 @@ export const handler = async function (
       const userDetails = {
         avatar: avatarUrl,
         email: userItem?.email.S,
-        feedList: feedList.sort(
-          (a, b) => parseInt(b.timestamp!, 10) - parseInt(a.timestamp!, 10)
-        ), // show feeds in order from latest to earliest
+        // feedList: feedList.sort(
+        //   (a, b) => parseInt(b.timestamp!, 10) - parseInt(a.timestamp!, 10)
+        // ), // show feeds in order from latest to earliest
+        feedList: feedList,
       };
 
       body = {
