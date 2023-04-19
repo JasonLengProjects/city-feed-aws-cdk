@@ -1,6 +1,6 @@
 import {
-  REGION_MAPPING,
   FEED_DYNAMODB_TABLE_NAME,
+  FEED_DYNMODB_USER_CREATED_AT_INDEX_NAME,
   USER_DYNAMODB_TABLE_NAME,
   MEDIA_BUCKET_NAME,
   USER_AVATAR_BUCKET_NAME,
@@ -12,8 +12,18 @@ import AWS = require("aws-sdk");
 import { Context, APIGatewayEvent } from "aws-lambda";
 import {
   DynamoDBQueryParams,
-  DynamoDBScanParams,
+  FeedResponseObj,
 } from "../interfaces/feedInterfaces";
+
+export interface GetUserDetailResponseBody {
+  code: string;
+  msg: string;
+  userDetails: {
+    avatar: string;
+    email: string;
+    feedList: FeedResponseObj[];
+  };
+}
 
 AWS.config.update({ region: "us-west-2" });
 const s3 = new AWS.S3();
@@ -27,37 +37,37 @@ export const handler = async function (
     const parameters = event.queryStringParameters;
     const userId = parameters?.userId ?? "defaultId";
 
-    // query params
-    const queryParams: DynamoDBScanParams = {
+    // query params for checking the existence of target user
+    const queryParams: DynamoDBQueryParams = {
       TableName: USER_DYNAMODB_TABLE_NAME,
-      FilterExpression: "id = :id",
+      KeyConditionExpression: "id = :id",
       ExpressionAttributeValues: {
         ":id": { S: userId },
       },
     };
 
-    let body;
-
-    // query user with scan
-    const userItems = await ddb.scan(queryParams).promise();
+    // query user
+    const userItems = await ddb.query(queryParams).promise();
 
     if (userItems?.Items?.length == 0) {
-      body = {
-        code: "1",
-        msg: "User Id does not exist.",
-      };
+      return getBadResponse("User Id does not exist.");
     } else {
       const userItem = userItems.Items ? userItems.Items[0] : null;
-      const feedQueryParams: DynamoDBScanParams = {
+
+      // query params for 10 lastest feeds created by target user
+      const feedQueryParams: DynamoDBQueryParams = {
         TableName: FEED_DYNAMODB_TABLE_NAME,
-        FilterExpression: "userId = :uid",
+        IndexName: FEED_DYNMODB_USER_CREATED_AT_INDEX_NAME,
+        KeyConditionExpression: "userId = :ui",
         ExpressionAttributeValues: {
-          ":uid": { S: userId },
+          ":ui": { S: userId },
         },
+        ScanIndexForward: false,
+        Limit: 10,
       };
 
-      // query user feeds with scan
-      const feedItems = await ddb.scan(feedQueryParams).promise();
+      // query user feeds written by target user
+      const feedItems = await ddb.query(feedQueryParams).promise();
 
       // map items into response body
       const feedListPromises = feedItems.Items?.map(async (item) => {
@@ -90,24 +100,28 @@ export const handler = async function (
             : FEED_LIKE_STATUS.Liked
         ).toString();
 
-        return {
-          feedId: item.id.S,
-          userId: item.userId.S,
-          title: item.title.S,
+        const feedItemObj: FeedResponseObj = {
+          feedId: item.id.S!,
+          userId: item.userId.S!,
+          title: item.title.S!,
           avatar: "https://www.w3schools.com/howto/img_avatar.png",
-          content: item.content.S,
-          timestamp: item.createdAt.N,
-          region: item.region.S,
+          content: item.content.S!,
+          timestamp: item.createdAt.N!,
+          region: item.region.S!,
           media: [
             {
-              type: item.media.M?.type.S,
+              type: item.media.M?.type.S!,
               imgUrl: imgUrl,
             },
           ],
-          likes: item.likes.N,
+          likes: item.likes.N!,
           liked: liked,
-          commentNum: item.commentNum.N,
+          commentNum: item.commentNum.N!,
+          hashtags: item.hashtags.SS!,
+          status: item.status.S!,
         };
+
+        return feedItemObj;
       });
 
       const feedList = await Promise.all(feedListPromises ?? []);
@@ -120,31 +134,30 @@ export const handler = async function (
 
       const userDetails = {
         avatar: avatarUrl,
-        email: userItem?.email.S,
-        feedList: feedList.sort(
-          (a, b) => parseInt(b.timestamp!, 10) - parseInt(a.timestamp!, 10)
-        ), // show feeds in order from latest to earliest
+        email: userItem?.email.S!,
+        feedList: feedList,
       };
 
-      body = {
+      const body: GetUserDetailResponseBody = {
         code: "0",
         msg: "Success",
         userDetails: userDetails,
       };
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "OPTIONS,GET",
+          "X-Requested-With": "*",
+          "Access-Control-Allow-Headers":
+            "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
+        },
+        body: JSON.stringify(body),
+      };
     }
-    return {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "OPTIONS,GET",
-        "X-Requested-With": "*",
-        "Access-Control-Allow-Headers":
-          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
-      },
-      body: JSON.stringify(body),
-    };
   } catch (error: any) {
-    let body = error.stack || JSON.stringify(error, null, 2);
+    const body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
       headers: {
@@ -157,4 +170,21 @@ export const handler = async function (
       body: JSON.stringify(body),
     };
   }
+};
+
+const getBadResponse = (msg: string) => {
+  return {
+    statusCode: 400,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "OPTIONS,POST",
+      "X-Requested-With": "*",
+      "Access-Control-Allow-Headers":
+        "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-requested-with",
+    },
+    body: JSON.stringify({
+      code: "1",
+      msg: msg,
+    }),
+  };
 };

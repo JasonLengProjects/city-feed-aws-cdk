@@ -1,6 +1,7 @@
 import {
   FEED_DYNAMODB_TABLE_NAME,
   USER_LIKED_DYNAMODB_TABLE_NAME,
+  USER_LIKED_DYNAMODB_USER_LIKED_AT_INDEX_NAME,
   MEDIA_BUCKET_NAME,
   IMAGE_URL_EXP_SECONDS,
   FEED_LIKE_STATUS,
@@ -31,18 +32,18 @@ export const handler = async function (
     // query like history
     const ddbLikeQueryParams: DynamoDBQueryParams = {
       TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
+      IndexName: USER_LIKED_DYNAMODB_USER_LIKED_AT_INDEX_NAME,
+      KeyConditionExpression: "userId = :ui",
       ExpressionAttributeValues: {
         ":ui": { S: userId },
       },
-      KeyConditionExpression: "userId = :ui",
       ProjectionExpression: "userId, feedId, likedAt",
+      ScanIndexForward: false,
+      Limit: 10,
     };
     const likedItems = await ddb.query(ddbLikeQueryParams).promise();
 
-    // show feeds in order from latest liked to earliest liked
-    const likedItemList = likedItems.Items?.sort(
-      (a, b) => parseInt(b.likedAt.N!, 10) - parseInt(a.likedAt.N!, 10)
-    );
+    const likedItemList = likedItems.Items;
 
     console.log("Sorted list: ", likedItemList);
 
@@ -56,7 +57,17 @@ export const handler = async function (
         KeyConditionExpression: "id = :fi",
       };
       const feedItems = await ddb.query(ddbFeedQueryParams).promise();
-      const feedItem = feedItems.Items ? feedItems.Items[0] : null;
+
+      // check if feed exists
+      const feedItem = feedItems.Items
+        ? feedItems.Items.length !== 0
+          ? feedItems.Items[0]
+          : null
+        : null;
+
+      if (!feedItem) {
+        return null;
+      }
 
       // get temp url for feed image
       const imgUrl = s3.getSignedUrl("getObject", {
@@ -82,6 +93,8 @@ export const handler = async function (
         likes: feedItem?.likes.N!,
         liked: FEED_LIKE_STATUS.Liked.toString(),
         commentNum: feedItem?.commentNum.N!,
+        hashtags: feedItem.hashtags.SS!,
+        status: feedItem.status.S!,
       };
 
       return feedItemObj;
@@ -89,12 +102,14 @@ export const handler = async function (
 
     const feedList = await Promise.all(feedListPromises ?? []);
 
-    console.log("FeedList: ", feedList);
+    const feedlistFiltered = feedList.filter((item) => item !== null);
 
-    let body: GetFavListResponseBody = {
+    console.log("FeedList: ", feedlistFiltered);
+
+    const body: GetFavListResponseBody = {
       code: "0",
       msg: "Success",
-      feedList: feedList!,
+      feedList: feedlistFiltered as FeedResponseObj[],
     };
 
     return {
@@ -109,7 +124,7 @@ export const handler = async function (
       body: JSON.stringify(body),
     };
   } catch (error: any) {
-    let body = error.stack || JSON.stringify(error, null, 2);
+    const body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
       headers: {

@@ -17,6 +17,8 @@ export interface FeedResponseObj {
   likes: string;
   liked: string;
   commentNum: string;
+  hashtags: string[];
+  status: string;
 }
 
 export interface DynamoDBFeedTablePutParams {
@@ -50,9 +52,13 @@ export interface DynamoDBScanParams {
 
 export interface DynamoDBQueryParams {
   TableName: string;
+  IndexName?: string;
+  ExpressionAttributeNames?: {};
   ExpressionAttributeValues?: {};
   KeyConditionExpression?: string;
   ProjectionExpression?: string;
+  ScanIndexForward?: boolean;
+  Limit?: number;
 }
 
 export interface DynamoDBUserLikedTablePutParams {
