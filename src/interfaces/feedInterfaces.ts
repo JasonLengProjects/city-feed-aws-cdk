@@ -17,6 +17,8 @@ export interface FeedResponseObj {
   likes: string;
   liked: string;
   commentNum: string;
+  hashtags: string[];
+  status: string;
 }
 
 export interface DynamoDBFeedTablePutParams {

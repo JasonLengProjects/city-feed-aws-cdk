@@ -29,19 +29,6 @@ export const handler = async function (
     const parameters = event.queryStringParameters;
     const userId = parameters?.userId ?? "defaultId";
 
-    // const queryParams: DynamoDBQueryParams = {
-    //   TableName: FEED_DYNAMODB_TABLE_NAME,
-    //   IndexName: FEED_DYNMODB_CREATED_AT_INDEX_NAME,
-    //   KeyConditionExpression: "#status = :status",
-    //   ExpressionAttributeNames: {
-    //     "#status": "status",
-    //   },
-    //   ExpressionAttributeValues: {
-    //     ":status": { S: "public" },
-    //   },
-    //   ScanIndexForward: false,
-    //   Limit: 10,
-    // };
     // query like history
     const ddbLikeQueryParams: DynamoDBQueryParams = {
       TableName: USER_LIKED_DYNAMODB_TABLE_NAME,
@@ -106,6 +93,8 @@ export const handler = async function (
         likes: feedItem?.likes.N!,
         liked: FEED_LIKE_STATUS.Liked.toString(),
         commentNum: feedItem?.commentNum.N!,
+        hashtags: feedItem.hashtags.SS!,
+        status: feedItem.status.S!,
       };
 
       return feedItemObj;
@@ -117,7 +106,7 @@ export const handler = async function (
 
     console.log("FeedList: ", feedlistFiltered);
 
-    let body: GetFavListResponseBody = {
+    const body: GetFavListResponseBody = {
       code: "0",
       msg: "Success",
       feedList: feedlistFiltered as FeedResponseObj[],
@@ -135,7 +124,7 @@ export const handler = async function (
       body: JSON.stringify(body),
     };
   } catch (error: any) {
-    let body = error.stack || JSON.stringify(error, null, 2);
+    const body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
       headers: {

@@ -184,7 +184,7 @@ export const handler = async function (
         .promise();
     }
 
-    let body: LikeFeedResponseBody = {
+    const body: LikeFeedResponseBody = {
       code: "0",
       msg: "Success",
       liked: liked.toString(),
@@ -203,7 +203,7 @@ export const handler = async function (
       body: JSON.stringify(body),
     };
   } catch (error: any) {
-    let body = error.stack || JSON.stringify(error, null, 2);
+    const body = error.stack || JSON.stringify(error, null, 2);
     return {
       statusCode: 400,
       headers: {
